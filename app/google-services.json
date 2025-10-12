@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "513766485145",
+    "project_id": "bubt-bustracker",
+    "storage_bucket": "bubt-bustracker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:513766485145:android:7ff3ae3c487e1bf26c9c08",
+        "android_client_info": {
+          "package_name": "com.rr.bubtbustracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZX4W2pDx06h-07Vkl1yuiCIhFqIkaRGQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

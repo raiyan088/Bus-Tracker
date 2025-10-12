@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/main_bg"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_weight="1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_horizontal|bottom"
+            tools:ignore="NestedWeights">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/login"
+                android:textColor="@color/white"
+                android:textSize="48sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_weight="1"
+            android:gravity="bottom"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:layout_marginStart="12dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="@string/login_desc"
+                android:textColor="@color/white"
+                android:textSize="16sp"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="130dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        tools:ignore="UselessParent">
+
+
+        <com.rr.bubtbustracker.view.CustomView
+            android:layout_width="0dp"
+            android:layout_height="120dp"
+            android:layout_weight="1"
+            android:paddingStart="8dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="4dp"
+            android:paddingBottom="4dp"
+            android:translationX="-4dp"
+            app:cornerBottomRight="250dp"
+            app:cornerTopRight="250dp"
+            app:clickEffect="false">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <com.rr.bubtbustracker.view.CustomInputView
+                    android:id="@+id/email_input"
+                    android:layout_margin="3dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="8dp"
+                    app:logoSrc="@drawable/ic_email"
+                    app:hintText="@string/email"
+                    app:isEmail="true"
+                    app:paddingStart="16dp"
+                    app:paddingEnd="24dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="2dp"
+                    android:layout_marginEnd="36dp"
+                    android:background="#E0E0E0" />
+
+                <com.rr.bubtbustracker.view.CustomInputView
+                    android:id="@+id/pass_input"
+                    android:layout_margin="3dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="8dp"
+                    app:isPassword="true"
+                    app:logoSrc="@drawable/ic_password_hide"
+                    app:secondaryLogoSrc="@drawable/ic_password_show"
+                    app:hintText="@string/password"
+                    app:paddingStart="16dp"
+                    app:paddingEnd="24dp"/>
+
+            </LinearLayout>
+
+        </com.rr.bubtbustracker.view.CustomView>
+
+        <com.rr.bubtbustracker.view.CustomView
+            android:id="@+id/login"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginEnd="12dp"
+            android:translationX="-48dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_margin="8dp"
+            app:cornerRadius="250dp"
+            app:strokeWidth="1dp"
+            app:rippleColor="@color/white"
+            app:bgColor="@color/blue">
+
+            <ImageView
+                android:scaleType="center"
+                android:src="@drawable/arrow_forward"
+                android:contentDescription="@string/login"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+        </com.rr.bubtbustracker.view.CustomView>
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="right"
+            android:orientation="vertical"
+            android:paddingRight="32dp"
+            tools:ignore="RtlHardcoded,RtlSymmetry">
+
+            <Button
+                android:id="@+id/forget_password"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingLeft="12dp"
+                android:paddingTop="4dp"
+                android:paddingRight="8dp"
+                android:paddingBottom="4dp"
+                android:text="@string/forget_password"
+                android:textAllCaps="false"
+                android:textColor="#757575"
+                android:textSize="16sp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            tools:ignore="UselessParent">
+
+            <com.rr.bubtbustracker.view.CustomView
+                android:id="@+id/sign_up"
+                android:layout_width="120dp"
+                android:layout_height="48dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingStart="8dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="4dp"
+                android:paddingBottom="4dp"
+                android:translationX="-4dp"
+                app:rippleColor="@color/blue"
+                app:cornerBottomRight="250dp"
+                app:cornerTopRight="250dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:paddingEnd="12dp"
+                    android:text="@string/sign_up"
+                    android:textColor="#424242"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    tools:ignore="RtlSymmetry" />
+
+            </com.rr.bubtbustracker.view.CustomView>
+
+            <com.rr.bubtbustracker.view.CustomView
+                android:id="@+id/sign_up_2"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:translationX="-32dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_margin="8dp"
+                app:cornerRadius="250dp"
+                app:strokeWidth="1dp"
+                app:rippleColor="@color/white"
+                app:cardUsePadding="false"
+                app:bgColor="@color/blue">
+
+                <ImageButton
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="@string/login"
+                    android:src="@drawable/arrow_small_forward" />
+
+            </com.rr.bubtbustracker.view.CustomView>
+
+
+
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+
+</LinearLayout>
