@@ -171,9 +171,9 @@ public class DashboardActivity extends AppCompatActivity {
             if (!Objects.equals(currentBus.toUpperCase(), newBus.toUpperCase())) {
                 new AlertDialog.Builder(this)
                     .setTitle("Bus Change Warning")
-                    .setMessage("You are switching from " + currentBus + " to " + newBus + ".\n\n" +
-                            "• Your notification subscription will be updated.\n" +
-                            "• Some app data may be refreshed.\n" +
+                    .setMessage("Changing from " + capitalizeFirst(currentBus) + " to " + newBus + ".\n\n" +
+                            "• Your notification will be updated.\n" +
+                            "• App data may be refreshed.\n" +
                             "• Make sure you want to continue.")
                     .setCancelable(false)
                     .setPositiveButton("Continue", (dialog, which) -> {
@@ -258,7 +258,7 @@ public class DashboardActivity extends AppCompatActivity {
                     String status = json.optString("status");
                     if (!status.isEmpty()) {
                         if (status.equals("SUCCESS")) {
-                            Toast.makeText(this, "Bus changed to " + newBus, Toast.LENGTH_SHORT).show();
+                            message = "";
                             subscriptionChange(api, busName, newBus);
                         } else {
                             message = api.getMessage(status);
@@ -268,7 +268,7 @@ public class DashboardActivity extends AppCompatActivity {
             } catch (Exception e) {
                 message = "Exception Error! Please try again.";
             }
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            if (!message.isEmpty()) Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
         });
     }
 

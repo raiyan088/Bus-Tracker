@@ -191,7 +191,7 @@ public class API {
                         json.put("token", token);
 
                         Request request = new Request.Builder()
-                                .url(serverData.optString("host")+"bus_changes")
+                                .url(serverData.optString("host")+"bus_change")
                                 .post(RequestBody.create(json.toString(), JSON))
                                 .build();
 
