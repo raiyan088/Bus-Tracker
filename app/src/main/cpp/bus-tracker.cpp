@@ -170,13 +170,6 @@ Java_com_rr_bubtbustracker_App_getPublicUrl(JNIEnv *env, jclass clazz) {
     return env->NewStringUTF(PUBLIC_URL);
 }
 
-extern "C"
-JNIEXPORT jstring JNICALL
-Java_com_rr_bubtbustracker_App_getApikey(JNIEnv *env, jclass clazz) {
-    return env->NewStringUTF(API_KEY);
-}
-
-
 
 JNIEXPORT jbyteArray getSignatureArray(JNIEnv *env) {
     char *path = pathHelperGetPath();

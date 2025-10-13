@@ -3,7 +3,10 @@ package com.rr.bubtbustracker;
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.util.Log;
+import android.widget.Toast;
 
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.rr.bubtbustracker.api.API;
 
@@ -15,13 +18,14 @@ public class App extends Application {
     public static final String LOGIN_SUCCESS = "LOGIN_SUCCESS";
 
     private static SharedPreferences prefs;
-
     @Override
     public void onCreate() {
         super.onCreate();
-        API.initialize();
+        API api = API.initialize();
 
         prefs = getSharedPreferences("BusTracker", MODE_PRIVATE);
+
+        api.subscribeNotification(this, null);
     }
 
     public static void saveString(String key, String value) {
@@ -76,8 +80,6 @@ public class App extends Application {
     public static native String decryption(String data);
 
     public static native String getPublicUrl();
-
-    public static native String getApikey();
 
     public static native String getToken();
 }

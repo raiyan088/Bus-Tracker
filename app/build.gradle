@@ -1,21 +1,20 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
     namespace 'com.rr.bubtbustracker'
     compileSdk 36
 
-    def keystoreProperties = new Properties()
-    file("../key.properties").withInputStream { keystoreProperties.load(it) }
+    def properties = new Properties()
+    file("../key.properties").withInputStream { properties.load(it) }
 
     signingConfigs {
         debug {
             storeFile file('E:\\AndroidStudio\\SIGNATURE_KEY\\BusTracker.jks')
-            storePassword keystoreProperties['storePassword']
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
+            storePassword properties['storePassword']
+            keyAlias properties['keyAlias']
+            keyPassword properties['keyPassword']
 
             v1SigningEnabled true
             v2SigningEnabled true
@@ -23,9 +22,9 @@ android {
 
         release {
             storeFile file('E:\\AndroidStudio\\SIGNATURE_KEY\\BusTracker.jks')
-            storePassword keystoreProperties['storePassword']
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
+            storePassword properties['storePassword']
+            keyAlias properties['keyAlias']
+            keyPassword properties['keyPassword']
 
             v1SigningEnabled true
             v2SigningEnabled true
@@ -40,6 +39,8 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders = [ MAPS_API_KEY: properties["MAPS_API_KEY"] ]
+
         externalNativeBuild {
             cmake {
                 cppFlags ''
@@ -80,7 +81,7 @@ android {
     }
 
     buildFeatures {
-        aidl true
+        buildConfig true
     }
 }
 

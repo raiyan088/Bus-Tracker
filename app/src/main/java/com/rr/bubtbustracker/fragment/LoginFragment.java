@@ -106,8 +106,20 @@ public class LoginFragment extends Fragment {
                                 App.saveLong("token_time", System.currentTimeMillis()+3000000);
 
                                 if (json.optBoolean("verified")) {
-                                    Toast.makeText(requireContext(), "Login successful! Redirecting to Dashboard", Toast.LENGTH_SHORT).show();
-                                    goToDashboard();
+                                    Toast.makeText(requireContext(), "Login successful!", Toast.LENGTH_SHORT).show();
+                                    loading.setMessage("Subscribing to Notifications...");
+                                    loading.setCancelable(false);
+                                    loading.show();
+
+                                    api.subscribeNotification(requireContext(), subscribe -> {
+                                        if (loading.isShowing()) loading.dismiss();
+                                        if (subscribe) {
+                                            Toast.makeText(requireContext(), "Notification subscribed successfully!", Toast.LENGTH_SHORT).show();
+                                        } else {
+                                            Toast.makeText(requireContext(), "Subscription failed, continuing without notifications.", Toast.LENGTH_SHORT).show();
+                                        }
+                                        goToDashboard();
+                                    });
                                 } else {
                                     Toast.makeText(requireContext(), "Please verify your email first!", Toast.LENGTH_SHORT).show();
                                     goToVerificationPage();

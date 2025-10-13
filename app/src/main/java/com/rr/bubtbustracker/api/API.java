@@ -1,9 +1,13 @@
 package com.rr.bubtbustracker.api;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.rr.bubtbustracker.App;
 import com.rr.bubtbustracker.interfaces.ApiCallback;
 
@@ -19,6 +23,10 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class API {
+
+    public interface Callback {
+        void onStatus(boolean status);
+    }
 
     private static API mAPI;
     private final OkHttpClient client;
@@ -241,7 +249,7 @@ public class API {
 
             try {
                 String[] tokenParts = App.decryption(requestToken).split("\\|");
-                if (tokenParts.length == 4) {
+                if (tokenParts.length >= 4) {
                     String accessToken = token;
                     String latestToken = null;
                     if (System.currentTimeMillis() > refreshTime) {
@@ -342,6 +350,97 @@ public class API {
 
         return null;
     }
+
+    public void subscribeNotification(Context context, Callback callback) {
+        try {
+            if (App.getString("subscribe", "").isEmpty()) {
+                boolean isConfig = true;
+                if (FirebaseApp.getApps(context).isEmpty()) {
+                    isConfig = false;
+                    String requestToken = App.getString("requestToken", "");
+                    if (!requestToken.isEmpty()) {
+                        String[] tokenParts = App.decryption(requestToken).split("\\|");
+                        if (tokenParts.length >= 5) {
+                            FirebaseOptions options = new FirebaseOptions.Builder()
+                                    .setApiKey(tokenParts[0])
+                                    .setApplicationId(tokenParts[2])
+                                    .setProjectId(tokenParts[4])
+                                    .build();
+
+                            FirebaseApp.initializeApp(context, options);
+                            isConfig = true;
+                        }
+                    }
+                }
+
+                if (isConfig) {
+                    String bus = App.getString("bus", "Padma").toUpperCase();
+                    FirebaseMessaging.getInstance().subscribeToTopic(bus).addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            App.saveString("subscribe", bus);
+                            if (callback != null) callback.onStatus(true);
+                        } else {
+                            if (callback != null) callback.onStatus(false);
+                        }
+                    }).addOnFailureListener(e -> {
+                        if (callback != null) callback.onStatus(false);
+                    });
+                } else {
+                    if (callback != null) callback.onStatus(false);
+                }
+            } else {
+                if (callback != null) callback.onStatus(false);
+            }
+        } catch (Exception e) {
+            if (callback != null) callback.onStatus(false);
+        }
+    }
+
+    public void unSubscribeNotification(Context context, Callback callback) {
+        try {
+            String bus = App.getString("subscribe", "");
+            if (!bus.isEmpty()) {
+                boolean isConfig = true;
+                if (FirebaseApp.getApps(context).isEmpty()) {
+                    isConfig = false;
+                    String requestToken = App.getString("requestToken", "");
+                    if (!requestToken.isEmpty()) {
+                        String[] tokenParts = App.decryption(requestToken).split("\\|");
+                        if (tokenParts.length >= 5) {
+                            FirebaseOptions options = new FirebaseOptions.Builder()
+                                    .setApiKey(tokenParts[0])
+                                    .setApplicationId(tokenParts[2])
+                                    .setProjectId(tokenParts[4])
+                                    .build();
+
+                            FirebaseApp.initializeApp(context, options);
+                            isConfig = true;
+                        }
+                    }
+                }
+
+                if (isConfig) {
+                    FirebaseMessaging.getInstance().unsubscribeFromTopic(bus).addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            App.saveString("subscribe", "");
+                            if (callback != null) callback.onStatus(true);
+                        } else {
+                            if (callback != null) callback.onStatus(false);
+                        }
+                    }).addOnFailureListener(e -> {
+                        if (callback != null) callback.onStatus(false);
+                    });
+                } else {
+                    if (callback != null) callback.onStatus(false);
+                }
+            } else {
+                if (callback != null) callback.onStatus(false);
+            }
+        } catch (Exception e) {
+            if (callback != null) callback.onStatus(false);
+        }
+    }
+
 
     public String getMessage(String status) {
         switch (status) {

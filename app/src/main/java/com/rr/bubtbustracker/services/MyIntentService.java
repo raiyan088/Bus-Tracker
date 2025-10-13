@@ -3,6 +3,7 @@ package com.rr.bubtbustracker.services;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.JobIntentService;
@@ -20,8 +21,9 @@ public class MyIntentService extends JobIntentService {
         try {
             final Bundle extras = intent.getExtras();
             final  String title = getTitle(extras);
-            final  String content = getMessage(extras);
-
+            final  String body = getMessage(extras);
+            Log.d("BusTrackerLog", "onHandleWork: "+title);
+            Log.d("BusTrackerLog", "onHandleWork: "+body);
         } catch (Exception ignored) {}
     }
 
