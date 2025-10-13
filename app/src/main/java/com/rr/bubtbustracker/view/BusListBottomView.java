@@ -38,7 +38,7 @@ public class BusListBottomView {
         ArrayList<String> finalList = list;
         listView.setOnItemClickListener((parent, view1, position, id) -> {
             String selected = finalList.get(position);
-            textView.setText(selected);
+            if (textView != null)  textView.setText(selected);
             dialog.dismiss();
             if (callback != null) callback.onSelected(selected);
         });

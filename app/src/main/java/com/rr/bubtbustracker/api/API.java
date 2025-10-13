@@ -56,16 +56,12 @@ public class API {
     public void serverData(ApiCallback callback) {
         Executors.newSingleThreadExecutor().execute(() -> {
             try {
-                Request request = new Request.Builder().url(App.getPublicUrl()).build();
-                Response response = client.newCall(request).execute();
-                if (response.isSuccessful()) {
-                    serverData = new JSONObject(response.body().string());
-                    handler.post(() -> {
-                        if (callback != null) {
-                            callback.onResult(serverData);
-                        }
-                    });
-                }
+                readServerData();
+                handler.post(() -> {
+                    if (callback != null) {
+                        callback.onResult(serverData);
+                    }
+                });
             } catch (Exception ignored) {}
         });
     }
@@ -74,13 +70,7 @@ public class API {
         Executors.newSingleThreadExecutor().execute(() -> {
             JSONObject result = null;
             try {
-                if (serverData == null) {
-                    Request request = new Request.Builder().url(App.getPublicUrl()).build();
-                    Response response = client.newCall(request).execute();
-                    if (response.isSuccessful()) {
-                        serverData = new JSONObject(response.body().string());
-                    }
-                }
+                readServerData();
 
                 if (serverData != null) {
                     String token = App.getToken();
@@ -117,13 +107,7 @@ public class API {
         Executors.newSingleThreadExecutor().execute(() -> {
             JSONObject result = null;
             try {
-                if (serverData == null) {
-                    Request request = new Request.Builder().url(App.getPublicUrl()).build();
-                    Response response = client.newCall(request).execute();
-                    if (response.isSuccessful()) {
-                        serverData = new JSONObject(response.body().string());
-                    }
-                }
+                readServerData();
                 if (serverData != null) {
                     String token = App.getToken();
                     if (!token.isEmpty()) {
@@ -162,14 +146,7 @@ public class API {
         Executors.newSingleThreadExecutor().execute(() -> {
             JSONObject result = null;
             try {
-                if (serverData == null) {
-                    Request request = new Request.Builder().url(App.getPublicUrl()).build();
-                    Response response = client.newCall(request).execute();
-                    if (response.isSuccessful()) {
-                        serverData = new JSONObject(response.body().string());
-                    }
-                }
-
+                readServerData();
                 if (serverData != null) {
                     String token = App.getToken();
                     if (!token.isEmpty()) {
@@ -200,17 +177,47 @@ public class API {
         });
     }
 
+    public void busChange(String id, String bus, ApiCallback callback) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            JSONObject result = null;
+            try {
+                readServerData();
+                if (serverData != null) {
+                    String token = App.getToken();
+                    if (!token.isEmpty()) {
+                        JSONObject json = new JSONObject();
+                        json.put("id", id);
+                        json.put("bus", bus);
+                        json.put("token", token);
+
+                        Request request = new Request.Builder()
+                                .url(serverData.optString("host")+"bus_changes")
+                                .post(RequestBody.create(json.toString(), JSON))
+                                .build();
+
+                        Response response = client.newCall(request).execute();
+                        if (response.isSuccessful()) {
+                            result = new JSONObject(response.body().string());
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            JSONObject finalResult = result;
+
+            handler.post(() -> {
+                if (callback != null) {
+                    callback.onResult(finalResult);
+                }
+            });
+        });
+    }
+
     public void verification(String refreshToken, String accessToken, ApiCallback callback) {
         Executors.newSingleThreadExecutor().execute(() -> {
             JSONObject result = null;
             try {
-                if (serverData == null) {
-                    Request request = new Request.Builder().url(App.getPublicUrl()).build();
-                    Response response = client.newCall(request).execute();
-                    if (response.isSuccessful()) {
-                        serverData = new JSONObject(response.body().string());
-                    }
-                }
+                readServerData();
                 if (serverData != null) {
                     String token = App.getToken();
                     if (!token.isEmpty()) {
@@ -441,6 +448,15 @@ public class API {
         }
     }
 
+    private void readServerData() throws IOException, JSONException {
+        if (serverData == null) {
+            Request request = new Request.Builder().url(App.getPublicUrl()).build();
+            Response response = client.newCall(request).execute();
+            if (response.isSuccessful()) {
+                serverData = new JSONObject(response.body().string());
+            }
+        }
+    }
 
     public String getMessage(String status) {
         switch (status) {

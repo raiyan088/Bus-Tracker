@@ -1,6 +1,8 @@
 package com.rr.bubtbustracker.activity;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
@@ -8,7 +10,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -33,13 +34,13 @@ import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.fragment.app.FragmentManager;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.rr.bubtbustracker.App;
 import com.rr.bubtbustracker.R;
+import com.rr.bubtbustracker.api.API;
 import com.rr.bubtbustracker.fragment.LocationFragment;
 import com.rr.bubtbustracker.fragment.NotificationFragment;
 import com.rr.bubtbustracker.fragment.ScheduleFragment;
@@ -163,9 +164,27 @@ public class DashboardActivity extends AppCompatActivity {
 
         busName.setText(capitalizeFirst(App.getString("bus", "Padma")));
 
-        busClick.setOnClickListener(v -> {
-            new BusListBottomView(this, null, busName, null);
-        });
+        API api = new API();
+
+        busClick.setOnClickListener(v -> new BusListBottomView(this, null, null, newBus -> {
+            String currentBus = App.getString("bus", "Padma");
+            if (!Objects.equals(currentBus.toUpperCase(), newBus.toUpperCase())) {
+                new AlertDialog.Builder(this)
+                    .setTitle("Bus Change Warning")
+                    .setMessage("You are switching from " + currentBus + " to " + newBus + ".\n\n" +
+                            "• Your notification subscription will be updated.\n" +
+                            "• Some app data may be refreshed.\n" +
+                            "• Make sure you want to continue.")
+                    .setCancelable(false)
+                    .setPositiveButton("Continue", (dialog, which) -> {
+                        busChange(api, busName, newBus);
+                    })
+                    .setNegativeButton("Cancel", (dialog, which) -> {
+                        dialog.dismiss();
+                    })
+                    .show();
+            }
+        }));
 
         LinearLayout scheduleLayout = main.findViewById(R.id.schedule_layout);
         LinearLayout notificationLayout = main.findViewById(R.id.notification_layout);
@@ -223,6 +242,65 @@ public class DashboardActivity extends AppCompatActivity {
                     .replace(R.id.container, locationFragment)
                     .commit();
         });
+    }
+
+    private void busChange(API api, TextView busName, String newBus) {
+        ProgressDialog loading = new ProgressDialog(this);
+        loading.setMessage("Changing bus...");
+        loading.setCancelable(false);
+        loading.show();
+
+        api.busChange(App.getString("id", ""), newBus.toUpperCase(), json -> {
+            if (loading.isShowing()) loading.dismiss();
+            String message = "Request Error! Please try again.";
+            try {
+                if (json != null) {
+                    String status = json.optString("status");
+                    if (!status.isEmpty()) {
+                        if (status.equals("SUCCESS")) {
+                            Toast.makeText(this, "Bus changed to " + newBus, Toast.LENGTH_SHORT).show();
+                            subscriptionChange(api, busName, newBus);
+                        } else {
+                            message = api.getMessage(status);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                message = "Exception Error! Please try again.";
+            }
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void subscriptionChange(API api, TextView busName, String newBus) {
+        ProgressDialog loading = new ProgressDialog(this);
+        loading.setMessage("Unsubscribing from old bus...");
+        loading.setCancelable(false);
+        loading.show();
+
+        api.unSubscribeNotification(getApplicationContext(), unSubscribe -> {
+            if (unSubscribe) {
+                loading.setMessage("Subscribing to new bus...");
+                App.saveString("bus", newBus.toUpperCase());
+                busName.setText(newBus);
+                api.subscribeNotification(getApplicationContext(), subscribe -> {
+                    if (loading.isShowing()) loading.dismiss();
+                    loadBusLocation(newBus);
+                    if (subscribe) {
+                        Toast.makeText(this, "Bus changed to " + newBus, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Bus changed but subscription failed", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } else {
+                if (loading.isShowing()) loading.dismiss();
+                Toast.makeText(this, "Failed to unsubscribe from previous bus notifications", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadBusLocation(String busName) {
+
     }
 
     public static String capitalizeFirst(String input) {
