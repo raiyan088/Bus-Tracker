@@ -14,4 +14,5 @@
 .cxx
 local.properties
 key.properties
+app/google-services.json
 app/src/main/cpp/data.h

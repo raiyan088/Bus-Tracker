@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.rr.bubtbustracker.api.API;
 
 public class App extends Application {
