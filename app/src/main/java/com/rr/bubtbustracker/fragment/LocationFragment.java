@@ -1,6 +1,9 @@
 package com.rr.bubtbustracker.fragment;
 
 import android.Manifest;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -10,6 +13,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -27,21 +32,26 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.rr.bubtbustracker.App;
 import com.rr.bubtbustracker.R;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 public class LocationFragment extends Fragment {
 
     private GoogleMap mMap;
     private float lastZoom = 0;
+    private Marker currentMarker;
 
     @Nullable
     @Override
@@ -54,6 +64,31 @@ public class LocationFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.google_map);
+
+        ClipboardManager clipboard = (ClipboardManager) requireContext().getSystemService(Context.CLIPBOARD_SERVICE);
+        Button copyBtn = view.findViewById(R.id.copyLocation);
+        copyBtn.setOnClickListener(v -> {
+            if (mMap != null) {
+                LatLng center = mMap.getCameraPosition().target; // Map center
+                if (currentMarker != null) {
+                    currentMarker.remove();
+                }
+
+                // নতুন marker add করা
+                currentMarker = mMap.addMarker(new MarkerOptions()
+                        .position(center)
+                        .title("Selected Location"));
+
+                String lat = String.format(Locale.US, "%.5f", center.latitude);
+                String lng = String.format(Locale.US, "%.5f", center.longitude);
+
+                // Clipboard এ copy করা
+                ClipData clip = ClipData.newPlainText("LatLng", lat + "," + lng);
+                clipboard.setPrimaryClip(clip);
+
+                Toast.makeText(requireContext(), "Copied: " + lat + "," + lng, Toast.LENGTH_SHORT).show();
+            }
+        });
 
         if (mapFragment != null) {
             mapFragment.getMapAsync(googleMap -> {
@@ -69,132 +104,181 @@ public class LocationFragment extends Fragment {
 
                 mMap.getUiSettings().setMyLocationButtonEnabled(true);
 
-                LatLng start = new LatLng(23.81174, 90.35676);
-                LatLng end = new LatLng(23.79858, 90.35314);
-                List<LatLng> points = new ArrayList<>();
-                points.add(start);
-                points.add(new LatLng(23.80812, 90.35792));
-                points.add(new LatLng(23.806, 90.35151));
-                points.add(new LatLng(23.8, 90.35513));
-                points.add(new LatLng(23.79982, 90.35503));
-                points.add(end);
-
-                PolylineOptions outer = new PolylineOptions()
-                        .addAll(points)
-                        .width(18)
-                        .color(Color.parseColor("#0A12D9"))
-                        .geodesic(true);
-                Polyline polylineOuter = mMap.addPolyline(outer);
-
-                PolylineOptions inner = new PolylineOptions()
-                        .addAll(points)
-                        .width(12)
-                        .color(Color.parseColor("#0F53FE"))
-                        .geodesic(true);
-
-                Polyline polylineInner = mMap.addPolyline(inner);
-
-                mMap.addMarker(new MarkerOptions()
-                        .position(start)
-                        .title("Start")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
-
-                mMap.addMarker(new MarkerOptions()
-                        .position(end)
-                        .title("End")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
-
-                mMap.addCircle(new CircleOptions()
-                        .center(start)
-                        .radius(40)
-                        .strokeColor(Color.TRANSPARENT)
-                        .fillColor(Color.parseColor("#20000000"))
-                        .strokeWidth(0)
-                        .zIndex(1));
-
-                mMap.addCircle(new CircleOptions()
-                        .center(end)
-                        .radius(40)
-                        .strokeColor(Color.TRANSPARENT)
-                        .fillColor(Color.parseColor("#20000000"))
-                        .strokeWidth(0)
-                        .zIndex(1));
-
-                Circle startCircle = mMap.addCircle(new CircleOptions()
-                        .center(start)
-                        .radius(20)
-                        .strokeColor(Color.parseColor("#FF757575"))
-                        .fillColor(Color.WHITE)
-                        .strokeWidth(6)
-                        .zIndex(2));
-
-                Circle endCircle = mMap.addCircle(new CircleOptions()
-                        .center(end)
-                        .radius(20)
-                        .strokeColor(Color.parseColor("#FF757575"))
-                        .fillColor(Color.WHITE)
-                        .strokeWidth(6)
-                        .zIndex(2));
-
-                mMap.setOnCameraMoveListener(() -> {
-                    float zoom = mMap.getCameraPosition().zoom;
-                    float currentZoom = (float) (Math.round(zoom * 100.0) / 100.0);
-
-                    if (currentZoom != lastZoom) {
-                        lastZoom = currentZoom;
-
-                        float baseWidthAt17 = 30.0f;
-                        float scalingFactor = 10.0f;
-
-                        float innerWidth = baseWidthAt17 + (zoom - 17f) * scalingFactor;
-
-                        float minimumWidth = 15.0f;
-
-                        if (innerWidth < minimumWidth) {
-                            innerWidth = minimumWidth;
+                // Map প্রস্তুত হওয়ার পরে
+                mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+                    @Override
+                    public void onMapClick(LatLng latLng) {
+                        // Marker add করা
+                        if (currentMarker != null) {
+                            currentMarker.remove();
                         }
 
-                        float outerWidth = innerWidth + 6f;
+                        // নতুন marker add করা
+                        currentMarker = mMap.addMarker(new MarkerOptions()
+                                .position(latLng)
+                                .title("Selected Location"));
 
-                        polylineInner.setWidth(innerWidth);
-                        polylineOuter.setWidth(outerWidth);
+                        // Lat এবং Lng কে String এ রূপান্তর
+                        String lat = String.format(Locale.US, "%.5f", latLng.latitude);
+                        String lng = String.format(Locale.US, "%.5f", latLng.longitude);
 
-                        double circlePixelSize = innerWidth + 6f;
+                        // Clipboard এ কপি করা
+                        ClipData clip = ClipData.newPlainText("LatLng", lat + "," + lng);
+                        clipboard.setPrimaryClip(clip);
 
-                        double startRadius = getRadiusInMeters(mMap, start, (float)circlePixelSize);
-                        double endRadius = getRadiusInMeters(mMap, end, (float)circlePixelSize);
-
-                        startCircle.setRadius(startRadius);
-                        endCircle.setRadius(endRadius);
+                        Toast.makeText(requireContext(), "Copied: " + lat + "," + lng, Toast.LENGTH_SHORT).show();
                     }
                 });
 
-                mMap.setOnCameraIdleListener(() -> {
-                    float zoom = mMap.getCameraPosition().zoom;
-                    float baseWidthAt17 = 30.0f;
-                    float scalingFactor = 10.0f;
 
-                    float innerWidth = baseWidthAt17 + (zoom - 17f) * scalingFactor;
-
-                    float minimumWidth = 15.0f;
-
-                    if (innerWidth < minimumWidth) {
-                        innerWidth = minimumWidth;
-                    }
-
-                    float outerWidth = innerWidth + 6f;
-
-                    polylineInner.setWidth(innerWidth);
-                    polylineOuter.setWidth(outerWidth);
-
-                    double circlePixelSize = innerWidth + 6f;
-
-                    double startRadius = getRadiusInMeters(mMap, start, (float)circlePixelSize);
-                    double endRadius = getRadiusInMeters(mMap, end, (float)circlePixelSize);
-
-                    startCircle.setRadius(startRadius);
-                    endCircle.setRadius(endRadius);
-                });
+//                LatLng start = new LatLng(0, 0);
+//                LatLng end = new LatLng(0, 0);
+//                List<LatLng> points = new ArrayList<>();
+//
+//                String jsonStr = "[{\"lat\":23.8060582,\"lng\":90.3514986},{\"lat\":23.808349900245872,\"lng\":90.35781657960277},{\"lat\":23.811606516850976,\"lng\":90.35681213038472},{\"lat\":23.811431700000004,\"lng\":90.35685889999999},{\"lat\":23.808181299999998,\"lng\":90.3578854}]";
+//
+//
+//                try {
+//                    JSONArray jsonArray = new JSONArray(jsonStr);
+//
+//                    for (int i = 0; i < jsonArray.length(); i++) {
+//                        JSONObject pointObj = jsonArray.getJSONObject(i);
+//                        double lat = pointObj.getDouble("lat");
+//                        double lng = pointObj.getDouble("lng");
+//                        points.add(new LatLng(lat, lng));
+//                    }
+//
+//                    Collections.reverse(points);
+//
+//                    if (!points.isEmpty()) {
+//                        start = points.get(0);
+//                        end = points.get(points.size() - 1);
+//                    }
+//
+//                } catch (Exception e) {}
+//
+//                PolylineOptions outer = new PolylineOptions()
+//                        .addAll(points)
+//                        .width(18)
+//                        .color(Color.parseColor("#0A12D9"))
+//                        .geodesic(true);
+//                Polyline polylineOuter = mMap.addPolyline(outer);
+//
+//                PolylineOptions inner = new PolylineOptions()
+//                        .addAll(points)
+//                        .width(12)
+//                        .color(Color.parseColor("#0F53FE"))
+//                        .geodesic(true);
+//
+//                Polyline polylineInner = mMap.addPolyline(inner);
+//
+//
+//
+//                mMap.addMarker(new MarkerOptions()
+//                        .position(start)
+//                        .title("Start")
+//                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+//
+//                mMap.addMarker(new MarkerOptions()
+//                        .position(end)
+//                        .title("End")
+//                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+//
+//                mMap.addCircle(new CircleOptions()
+//                        .center(start)
+//                        .radius(40)
+//                        .strokeColor(Color.TRANSPARENT)
+//                        .fillColor(Color.parseColor("#20000000"))
+//                        .strokeWidth(0)
+//                        .zIndex(1));
+//
+//                mMap.addCircle(new CircleOptions()
+//                        .center(end)
+//                        .radius(40)
+//                        .strokeColor(Color.TRANSPARENT)
+//                        .fillColor(Color.parseColor("#20000000"))
+//                        .strokeWidth(0)
+//                        .zIndex(1));
+//
+//                Circle startCircle = mMap.addCircle(new CircleOptions()
+//                        .center(start)
+//                        .radius(20)
+//                        .strokeColor(Color.parseColor("#FF757575"))
+//                        .fillColor(Color.WHITE)
+//                        .strokeWidth(6)
+//                        .zIndex(2));
+//
+//                Circle endCircle = mMap.addCircle(new CircleOptions()
+//                        .center(end)
+//                        .radius(20)
+//                        .strokeColor(Color.parseColor("#FF757575"))
+//                        .fillColor(Color.WHITE)
+//                        .strokeWidth(6)
+//                        .zIndex(2));
+//
+//                LatLng finalStart = start;
+//                LatLng finalEnd = end;
+//                mMap.setOnCameraMoveListener(() -> {
+//                    float zoom = mMap.getCameraPosition().zoom;
+//                    float currentZoom = (float) (Math.round(zoom * 100.0) / 100.0);
+//
+//                    if (currentZoom != lastZoom) {
+//                        lastZoom = currentZoom;
+//
+//                        float baseWidthAt17 = 30.0f;
+//                        float scalingFactor = 10.0f;
+//
+//                        float innerWidth = baseWidthAt17 + (zoom - 17f) * scalingFactor;
+//
+//                        float minimumWidth = 15.0f;
+//
+//                        if (innerWidth < minimumWidth) {
+//                            innerWidth = minimumWidth;
+//                        }
+//
+//                        float outerWidth = innerWidth + 6f;
+//
+//                        polylineInner.setWidth(innerWidth);
+//                        polylineOuter.setWidth(outerWidth);
+//
+//                        double circlePixelSize = innerWidth + 6f;
+//
+//                        double startRadius = getRadiusInMeters(mMap, finalStart, (float)circlePixelSize);
+//                        double endRadius = getRadiusInMeters(mMap, finalEnd, (float)circlePixelSize);
+//
+//                        startCircle.setRadius(startRadius);
+//                        endCircle.setRadius(endRadius);
+//                    }
+//                });
+//
+//                LatLng finalStart1 = start;
+//                LatLng finalEnd1 = end;
+//                mMap.setOnCameraIdleListener(() -> {
+//                    float zoom = mMap.getCameraPosition().zoom;
+//                    float baseWidthAt17 = 30.0f;
+//                    float scalingFactor = 10.0f;
+//
+//                    float innerWidth = baseWidthAt17 + (zoom - 17f) * scalingFactor;
+//
+//                    float minimumWidth = 15.0f;
+//
+//                    if (innerWidth < minimumWidth) {
+//                        innerWidth = minimumWidth;
+//                    }
+//
+//                    float outerWidth = innerWidth + 6f;
+//
+//                    polylineInner.setWidth(innerWidth);
+//                    polylineOuter.setWidth(outerWidth);
+//
+//                    double circlePixelSize = innerWidth + 6f;
+//
+//                    double startRadius = getRadiusInMeters(mMap, finalStart1, (float)circlePixelSize);
+//                    double endRadius = getRadiusInMeters(mMap, finalEnd1, (float)circlePixelSize);
+//
+//                    startCircle.setRadius(startRadius);
+//                    endCircle.setRadius(endRadius);
+//                });
             });
         }
     }
