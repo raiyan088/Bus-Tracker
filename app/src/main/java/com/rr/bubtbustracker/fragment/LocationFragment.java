@@ -58,8 +58,8 @@ public class LocationFragment extends Fragment {
     private Marker endMarker;
     private Polyline polylineOuter;
     private Polyline polylineInner;
-    private HashMap<String, Circle> outerCircle;
-    private HashMap<String, Circle> innerCircle;
+    private List<Circle> outerCircle;
+    private List<Circle> innerCircle;
 
     @Nullable
     @Override
@@ -161,6 +161,30 @@ public class LocationFragment extends Fragment {
 
                     updateMapZoom();
                 });
+
+                mMap.setOnCircleClickListener(circle -> {
+                    String name = (String) circle.getTag();
+                    LatLng center = circle.getCenter();
+
+                    if (startMarker != null) {
+                        startMarker.remove();
+                        startMarker = null;
+                    }
+
+                    if (endMarker != null) {
+                        endMarker.remove();
+                        endMarker = null;
+                    }
+
+                    startMarker = mMap.addMarker(new MarkerOptions()
+                            .position(center)
+                            .title(name)
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+
+                    if (startMarker != null) {
+                        startMarker.showInfoWindow();
+                    }
+                });
             });
         }
     }
@@ -186,8 +210,8 @@ public class LocationFragment extends Fragment {
         double circlePixelSize = innerWidth + 10f;
 
         if (innerCircle != null) {
-            for (String key: innerCircle.keySet()) {
-                Circle circle = innerCircle.get(key);
+            for (int i = 0; i < innerCircle.size(); i++) {
+                Circle circle = innerCircle.get(i);
                 if (circle != null) {
                     LatLng center = circle.getCenter();
                     double radius = getRadiusInMeters(mMap, center, (float)circlePixelSize);
@@ -227,8 +251,8 @@ public class LocationFragment extends Fragment {
             removeAllView();
 
             float mapZoom = zoom;
-            innerCircle = new HashMap<>();
-            outerCircle = new HashMap<>();
+            innerCircle = new ArrayList<>();
+            outerCircle = new ArrayList<>();
 
             Iterator<String> keys = route.keys();
             while (keys.hasNext()) {
@@ -264,9 +288,9 @@ public class LocationFragment extends Fragment {
                                                 .fillColor(Color.parseColor("#20000000"))
                                                 .strokeWidth(0)
                                                 .zIndex(1));
-                                        circle.setTag(key);
+                                        circle.setTag(endName);
 
-                                        outerCircle.put(key, circle);
+                                        outerCircle.add(circle);
 
                                         circle = mMap.addCircle(new CircleOptions()
                                                 .center(latLng)
@@ -276,9 +300,9 @@ public class LocationFragment extends Fragment {
                                                 .strokeWidth(6)
                                                 .clickable(true)
                                                 .zIndex(2));
-                                        circle.setTag(key);
+                                        circle.setTag(endName);
 
-                                        innerCircle.put(key, circle);
+                                        innerCircle.add(circle);
                                     }
                                     points.add(latLng);
                                 }
@@ -307,13 +331,25 @@ public class LocationFragment extends Fragment {
                             .title(endName)
                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
 
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 200));
+                    if (startMarker != null) {
+                        startMarker.showInfoWindow();
+                    }
+
+                    if (endMarker != null) {
+                        endMarker.showInfoWindow();
+                    }
+
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, (int) zoom));
                 }
             } else {
                 startMarker = mMap.addMarker(new MarkerOptions()
                         .position(selected)
                         .title(selectedName)
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+
+                if (startMarker != null) {
+                    startMarker.showInfoWindow();
+                }
 
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(selected, mapZoom));
             }
@@ -360,8 +396,8 @@ public class LocationFragment extends Fragment {
         }
 
         if (innerCircle != null) {
-            for (String key: innerCircle.keySet()) {
-                Circle circle = innerCircle.get(key);
+            for (int i = 0; i < innerCircle.size(); i++) {
+                Circle circle = innerCircle.get(i);
                 if (circle != null) {
                     circle.remove();
                 }
@@ -370,8 +406,8 @@ public class LocationFragment extends Fragment {
         }
 
         if (outerCircle != null) {
-            for (String key: outerCircle.keySet()) {
-                Circle circle = outerCircle.get(key);
+            for (int i = 0; i < outerCircle.size(); i++) {
+                Circle circle = outerCircle.get(i);
                 if (circle != null) {
                     circle.remove();
                 }
