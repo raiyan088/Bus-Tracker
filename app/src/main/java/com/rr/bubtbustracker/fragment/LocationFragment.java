@@ -298,6 +298,6 @@ public class LocationFragment extends Fragment {
     }
 
     public void updateRoute(JSONObject route, String id) {
-
+        Log.d("BusTrackerLog", "updateRoute: "+route);
     }
 }

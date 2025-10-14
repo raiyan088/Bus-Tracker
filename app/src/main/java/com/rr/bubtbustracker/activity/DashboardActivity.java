@@ -1,6 +1,7 @@
 package com.rr.bubtbustracker.activity;
 
 import android.annotation.SuppressLint;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -438,7 +439,9 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
             Toast.makeText(this, "Settings clicked", Toast.LENGTH_SHORT).show();
             return true;
         } else if (id == R.id.action_logout) {
-            Toast.makeText(this, "Logout clicked", Toast.LENGTH_SHORT).show();
+            App.saveString("schedule", "[]");
+            App.saveLong("schedule_update", 0);
+            Toast.makeText(this, "schedule clear", Toast.LENGTH_SHORT).show();
             return true;
         }
 
