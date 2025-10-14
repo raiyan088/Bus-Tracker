@@ -76,6 +76,8 @@ public class ScheduleAdapter extends BaseAdapter {
             String name = jsonObject.getString("n");
             busName.setText(name);
 
+            double zoom = jsonObject.optDouble("z", 16);
+
             JSONObject route = jsonObject.getJSONObject("r");
             Iterator<String> keys = route.keys();
 
@@ -101,13 +103,13 @@ public class ScheduleAdapter extends BaseAdapter {
 
             busClick.setOnClickListener(v -> {
                 if (listener != null) {
-                    listener.onSelected(route, "");
+                    listener.onSelected(route, "", (float) zoom);
                 }
             });
 
             routeMapView.setOnPointClickListener(pointId -> {
                 if (listener != null) {
-                    listener.onSelected(route, pointId);
+                    listener.onSelected(route, pointId, (float) zoom);
                 }
             });
         } catch (Exception e) {}

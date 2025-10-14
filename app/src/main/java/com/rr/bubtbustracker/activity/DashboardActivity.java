@@ -419,8 +419,8 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
     }
 
     @Override
-    public void onSelected(JSONObject route, String id) {
-        locationFragment.updateRoute(route, id);
+    public void onSelected(JSONObject route, String id, float zoom) {
+        locationFragment.updateRoute(route, id, zoom);
         locationTabClick();
     }
 

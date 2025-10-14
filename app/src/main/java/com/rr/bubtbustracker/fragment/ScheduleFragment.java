@@ -81,9 +81,9 @@ public class ScheduleFragment extends Fragment {
     private void reloadAdapter() {
         try {
             jsonArray = new JSONArray(App.getString("schedule", "[]"));
-            adapter = new ScheduleAdapter(requireContext(), jsonArray, isFriday, (route, id) -> {
+            adapter = new ScheduleAdapter(requireContext(), jsonArray, isFriday, (route, id, zoom) -> {
                 if (listener != null) {
-                    listener.onSelected(route, id);
+                    listener.onSelected(route, id, zoom);
                 }
             });
             listView.setAdapter(adapter);
