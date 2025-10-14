@@ -113,26 +113,9 @@ public class DashboardActivity extends AppCompatActivity {
             window.getDecorView().setSystemUiVisibility(flags);
         }
 
-
-        int toolbarHeight;
-
-        TypedValue tv = new TypedValue();
-        if (getTheme().resolveAttribute(android.R.attr.actionBarSize, tv, true)) {
-            toolbarHeight = TypedValue.complexToDimensionPixelSize(tv.data, getResources().getDisplayMetrics());
-        } else {
-            toolbarHeight = (int) (56 * getResources().getDisplayMetrics().density);
-        }
-
-        View topBar = main.findViewById(R.id.top_bar);
-        ViewCompat.setOnApplyWindowInsetsListener(topBar, (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(main.findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            ViewGroup.LayoutParams params = v.getLayoutParams();
-            params.height = systemBars.top + toolbarHeight;
-            v.setLayoutParams(params);
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
-
-            View content = main.findViewById(R.id.main);
-            content.setPadding(systemBars.left, 0, systemBars.right, systemBars.bottom);
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
@@ -202,7 +185,7 @@ public class DashboardActivity extends AppCompatActivity {
         LocationFragment locationFragment = new LocationFragment();
         NotificationFragment notificationFragment = new NotificationFragment();
 
-        getSupportFragmentManager().beginTransaction().replace(R.id.container, locationFragment).commit();
+        getSupportFragmentManager().beginTransaction().replace(R.id.container, scheduleFragment).commit();
 
         scheduleLayout.setOnClickListener(v -> {
             actionSchedule.setColorFilter(blue);

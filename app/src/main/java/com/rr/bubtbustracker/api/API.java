@@ -24,6 +24,9 @@ import okhttp3.Response;
 
 public class API {
 
+    private static final String CONFIG_URL = "https://raw.githubusercontent.com/raiyan088/Bus-Tracker/refs/heads/master/config.json";
+    private static final String SCHEDULE_URL = "https://raw.githubusercontent.com/raiyan088/Bus-Tracker/refs/heads/master/schedule.json";
+
     public interface Callback {
         void onStatus(boolean status);
     }
@@ -450,7 +453,7 @@ public class API {
 
     private void readServerData() throws IOException, JSONException {
         if (serverData == null) {
-            Request request = new Request.Builder().url(App.getPublicUrl()).build();
+            Request request = new Request.Builder().url(CONFIG_URL).build();
             Response response = client.newCall(request).execute();
             if (response.isSuccessful()) {
                 serverData = new JSONObject(response.body().string());

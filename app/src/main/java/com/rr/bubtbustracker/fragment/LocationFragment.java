@@ -34,19 +34,19 @@ public class LocationFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.google_map);
-
-        if (mapFragment != null) {
-            mapFragment.getMapAsync(googleMap -> {
-                mMap = googleMap;
-
-                LatLng bubtLocation = new LatLng(23.81189,90.35711);
-                mMap.addMarker(new MarkerOptions().position(bubtLocation).title("Bangladesh University of Business and Technology (BUBT)"));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(bubtLocation, 15));
-
-                mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-                mMap.getUiSettings().setZoomControlsEnabled(true);
-            });
-        }
+//        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.google_map);
+//
+//        if (mapFragment != null) {
+//            mapFragment.getMapAsync(googleMap -> {
+//                mMap = googleMap;
+//
+//                LatLng bubtLocation = new LatLng(23.81189,90.35711);
+//                mMap.addMarker(new MarkerOptions().position(bubtLocation).title("Bangladesh University of Business and Technology (BUBT)"));
+//                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(bubtLocation, 15));
+//
+//                mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+//                mMap.getUiSettings().setZoomControlsEnabled(true);
+//            });
+//        }
     }
 }

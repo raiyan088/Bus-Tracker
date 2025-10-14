@@ -79,7 +79,5 @@ public class App extends Application {
 
     public static native String decryption(String data);
 
-    public static native String getPublicUrl();
-
     public static native String getToken();
 }

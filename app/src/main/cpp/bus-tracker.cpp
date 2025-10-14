@@ -164,13 +164,6 @@ Java_com_rr_bubtbustracker_App_getToken(JNIEnv *env, __attribute__((unused)) jcl
     return env->NewStringUTF(token.c_str());;
 }
 
-extern "C"
-JNIEXPORT jstring JNICALL
-Java_com_rr_bubtbustracker_App_getPublicUrl(JNIEnv *env, jclass clazz) {
-    return env->NewStringUTF(PUBLIC_URL);
-}
-
-
 JNIEXPORT jbyteArray getSignatureArray(JNIEnv *env) {
     char *path = pathHelperGetPath();
     if (!path) {
