@@ -1,23 +1,46 @@
 package com.rr.bubtbustracker.fragment;
 
+import android.app.AlarmManager;
+import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
+import android.widget.ListView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
+import com.rr.bubtbustracker.App;
 import com.rr.bubtbustracker.R;
-import com.rr.bubtbustracker.file.RoutePoint;
-import com.rr.bubtbustracker.view.RouteMapView;
+import com.rr.bubtbustracker.adapter.ScheduleAdapter;
+import com.rr.bubtbustracker.api.API;
+import com.rr.bubtbustracker.interfaces.OnBusClickListener;
 
-import java.util.Arrays;
-import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-public class ScheduleFragment  extends Fragment {
+public class ScheduleFragment extends Fragment {
+
+    private ScheduleAdapter adapter;
+    private JSONArray jsonArray;
+    private ListView listView;
+    private boolean dataUpdated = false;
+    private boolean isVisibleToUser = false;
+    private boolean isFriday = false;
+    private OnBusClickListener listener;
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        if (context instanceof OnBusClickListener) {
+            listener = (OnBusClickListener) context;
+        }
+    }
 
     @Nullable
     @Override
@@ -29,25 +52,61 @@ public class ScheduleFragment  extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        RouteMapView routeMapView = view.findViewById(R.id.route_map_view);
+        listView = view.findViewById(R.id.listView);
 
-        List<RoutePoint> stationData = Arrays.asList(
-                new RoutePoint("1", "ECB Chattar"),
-                new RoutePoint("2", "Kalshi Bridge"),
-                new RoutePoint("3", "Mirpur-12"),
-                new RoutePoint("4", "Duaripara"),
-                new RoutePoint("5", "BUBT3"),
-                new RoutePoint("6", "BUBT4"),
-                new RoutePoint("7", "BUBT")
-        );
+        reloadAdapter();
+        scheduleUpdateCheck();
+    }
 
-        routeMapView.setRoutePoints(stationData);
+    public void scheduleUpdateCheck() {
+        long now = System.currentTimeMillis();
+        if (0 < now) {
+            App.saveLong("schedule_update", now + 60000);
+            new API().scheduleData(schedule -> {
+                if (schedule != null) {
+                    App.saveString("schedule", schedule.toString());
+                    App.saveLong("schedule_update", now + AlarmManager.INTERVAL_HOUR);
 
-        routeMapView.setOnPointClickListener(new RouteMapView.OnPointClickListener() {
-            @Override
-            public void onPointClicked(String pointId) {
-                Toast.makeText(requireContext(), "Clicked Point ID: " + pointId, Toast.LENGTH_SHORT).show();
-            }
-        });
+                    dataUpdated = true;
+
+                    if (isVisibleToUser && isAdded()) {
+                        reloadAdapter();
+                        dataUpdated = false;
+                    }
+                }
+            });
+        }
+    }
+
+    private void reloadAdapter() {
+        try {
+            jsonArray = new JSONArray(App.getString("schedule", "[]"));
+            adapter = new ScheduleAdapter(requireContext(), jsonArray, isFriday, (route, id) -> {
+                if (listener != null) {
+                    listener.onSelected(route, id);
+                }
+            });
+            listView.setAdapter(adapter);
+        } catch (JSONException e) {}
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        isVisibleToUser = !hidden;
+
+        if (!hidden && dataUpdated) {
+            reloadAdapter();
+            dataUpdated = false;
+        }
+    }
+
+    public void setFriday(boolean friday) {
+        isFriday = friday;
+
+        if (isVisibleToUser && isAdded()) {
+            adapter.setFriday(friday);
+            adapter.notifyDataSetChanged();
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.rr.bubtbustracker.fragment;
 
 import android.annotation.SuppressLint;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -118,14 +119,20 @@ public class VerificationFragment extends Fragment {
                                     loading.setCancelable(false);
                                     loading.show();
 
-                                    api.subscribeNotification(requireContext(), subscribe -> {
-                                        if (loading.isShowing()) loading.dismiss();
-                                        if (subscribe) {
-                                            Toast.makeText(requireContext(), "Notification subscribed successfully!", Toast.LENGTH_SHORT).show();
-                                        } else {
-                                            Toast.makeText(requireContext(), "Subscription failed, continuing without notifications.", Toast.LENGTH_SHORT).show();
+                                    api.scheduleData(schedule -> {
+                                        if (schedule != null) {
+                                            App.saveString("schedule", schedule.toString());
+                                            App.saveLong("schedule_update", System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR);
                                         }
-                                        goToDashboard();
+                                        api.subscribeNotification(requireContext(), subscribe -> {
+                                            if (loading.isShowing()) loading.dismiss();
+                                            if (subscribe) {
+                                                Toast.makeText(requireContext(), "Notification subscribed successfully!", Toast.LENGTH_SHORT).show();
+                                            } else {
+                                                Toast.makeText(requireContext(), "Subscription failed, continuing without notifications.", Toast.LENGTH_SHORT).show();
+                                            }
+                                            goToDashboard();
+                                        });
                                     });
                                 } else {
                                     Toast.makeText(requireContext(), "Please check your inbox!", Toast.LENGTH_SHORT).show();

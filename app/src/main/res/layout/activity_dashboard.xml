@@ -33,7 +33,7 @@
                     app:contentInsetEnd="0dp">
 
                     <LinearLayout
-                        android:id="@+id/busClick"
+                        android:id="@+id/titleClick"
                         android:layout_width="160dp"
                         android:layout_height="36dp"
                         android:orientation="horizontal"
@@ -48,7 +48,7 @@
                         tools:ignore="RtlHardcoded,UseCompoundDrawables">
 
                         <TextView
-                            android:id="@+id/busName"
+                            android:id="@+id/titleName"
                             android:layout_weight="1"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -64,6 +64,7 @@
                             tools:ignore="RtlSymmetry" />
 
                         <ImageView
+                            android:id="@+id/titleIcon"
                             android:layout_width="22dp"
                             android:layout_height="22dp"
                             android:padding="1dp"

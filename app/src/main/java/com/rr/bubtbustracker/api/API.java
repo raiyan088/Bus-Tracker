@@ -11,6 +11,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.rr.bubtbustracker.App;
 import com.rr.bubtbustracker.interfaces.ApiCallback;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -56,7 +57,7 @@ public class API {
         client = new OkHttpClient.Builder().build();
     }
 
-    public void serverData(ApiCallback callback) {
+    public void serverData(ApiCallback<JSONObject> callback) {
         Executors.newSingleThreadExecutor().execute(() -> {
             try {
                 readServerData();
@@ -69,7 +70,24 @@ public class API {
         });
     }
 
-    public void login(String email, String password, ApiCallback callback) {
+    public void scheduleData(ApiCallback<JSONArray> callback) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                Request request = new Request.Builder().url(SCHEDULE_URL).build();
+                Response response = client.newCall(request).execute();
+                if (response.isSuccessful()) {
+                    JSONArray jsonObject = new JSONArray(response.body().string());
+                    handler.post(() -> {
+                        if (callback != null) {
+                            callback.onResult(jsonObject);
+                        }
+                    });
+                }
+            } catch (Exception ignored) {}
+        });
+    }
+
+    public void login(String email, String password, ApiCallback<JSONObject> callback) {
         Executors.newSingleThreadExecutor().execute(() -> {
             JSONObject result = null;
             try {
@@ -106,7 +124,7 @@ public class API {
         });
     }
 
-    public void signUp(String name, String email, String password, String bus, ApiCallback callback) {
+    public void signUp(String name, String email, String password, String bus, ApiCallback<JSONObject> callback) {
         Executors.newSingleThreadExecutor().execute(() -> {
             JSONObject result = null;
             try {
@@ -145,7 +163,7 @@ public class API {
         });
     }
 
-    public void reset(String email, ApiCallback callback) {
+    public void reset(String email, ApiCallback<JSONObject> callback) {
         Executors.newSingleThreadExecutor().execute(() -> {
             JSONObject result = null;
             try {
@@ -180,7 +198,7 @@ public class API {
         });
     }
 
-    public void busChange(String id, String bus, ApiCallback callback) {
+    public void busChange(String id, String bus, ApiCallback<JSONObject> callback) {
         Executors.newSingleThreadExecutor().execute(() -> {
             JSONObject result = null;
             try {
@@ -216,7 +234,7 @@ public class API {
         });
     }
 
-    public void verification(String refreshToken, String accessToken, ApiCallback callback) {
+    public void verification(String refreshToken, String accessToken, ApiCallback<JSONObject> callback) {
         Executors.newSingleThreadExecutor().execute(() -> {
             JSONObject result = null;
             try {
@@ -253,7 +271,7 @@ public class API {
         });
     }
 
-    public void checkStatus(String refreshToken, String token, String requestToken, long refreshTime, ApiCallback callback) {
+    public void checkStatus(String refreshToken, String token, String requestToken, long refreshTime, ApiCallback<JSONObject> callback) {
         Executors.newSingleThreadExecutor().execute(() -> {
             JSONObject result = null;
 

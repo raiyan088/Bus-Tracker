@@ -18,24 +18,21 @@ import com.rr.bubtbustracker.interfaces.OnSelected;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class BusListBottomView {
+public class ScheduleBottomView {
 
     @SuppressLint("InflateParams")
-    public BusListBottomView(Context context, ArrayList<String> list, TextView textView, OnSelected callback) {
+    public ScheduleBottomView(Context context, TextView textView, OnSelected callback) {
         BottomSheetDialog dialog = new BottomSheetDialog(context);
         View view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_list, null);
         ListView listView = view.findViewById(R.id.listViewOptions);
 
-        if (list == null || list.isEmpty()) {
-            list = new ArrayList<>(Arrays.asList( "Padma", "Meghna", "Jamuna", "Buriganga", "Brahmaputra" ));
-        }
+        ArrayList<String> list = new ArrayList<>(Arrays.asList( "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" ));
 
-        BottomViewAdapter adapter = new BottomViewAdapter(context, list, R.drawable.ic_bus, 8);
+        BottomViewAdapter adapter = new BottomViewAdapter(context, list, R.drawable.ic_schedule, 16);
         listView.setAdapter(adapter);
 
-        ArrayList<String> finalList = list;
         listView.setOnItemClickListener((parent, view1, position, id) -> {
-            String selected = finalList.get(position);
+            String selected = list.get(position);
             if (textView != null)  textView.setText(selected);
             dialog.dismiss();
             if (callback != null) callback.onSelected(selected);

@@ -1,5 +1,6 @@
 package com.rr.bubtbustracker.fragment;
 
+import android.app.AlarmManager;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -18,11 +19,17 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
 import com.rr.bubtbustracker.App;
+import com.rr.bubtbustracker.interfaces.ApiCallback;
 import com.rr.bubtbustracker.view.CustomInputView;
 import com.rr.bubtbustracker.view.CustomView;
 import com.rr.bubtbustracker.R;
 import com.rr.bubtbustracker.activity.DashboardActivity;
 import com.rr.bubtbustracker.api.API;
+
+import org.json.JSONObject;
+
+import java.time.Clock;
+import java.util.Timer;
 
 public class LoginFragment extends Fragment {
 
@@ -111,14 +118,20 @@ public class LoginFragment extends Fragment {
                                     loading.setCancelable(false);
                                     loading.show();
 
-                                    api.subscribeNotification(requireContext(), subscribe -> {
-                                        if (loading.isShowing()) loading.dismiss();
-                                        if (subscribe) {
-                                            Toast.makeText(requireContext(), "Notification subscribed successfully!", Toast.LENGTH_SHORT).show();
-                                        } else {
-                                            Toast.makeText(requireContext(), "Subscription failed, continuing without notifications.", Toast.LENGTH_SHORT).show();
+                                    api.scheduleData(schedule -> {
+                                        if (schedule != null) {
+                                            App.saveString("schedule", schedule.toString());
+                                            App.saveLong("schedule_update", System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR);
                                         }
-                                        goToDashboard();
+                                        api.subscribeNotification(requireContext(), subscribe -> {
+                                            if (loading.isShowing()) loading.dismiss();
+                                            if (subscribe) {
+                                                Toast.makeText(requireContext(), "Notification subscribed successfully!", Toast.LENGTH_SHORT).show();
+                                            } else {
+                                                Toast.makeText(requireContext(), "Subscription failed, continuing without notifications.", Toast.LENGTH_SHORT).show();
+                                            }
+                                            goToDashboard();
+                                        });
                                     });
                                 } else {
                                     Toast.makeText(requireContext(), "Please verify your email first!", Toast.LENGTH_SHORT).show();
