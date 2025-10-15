@@ -74,33 +74,6 @@ public class LocationFragment extends Fragment {
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.google_map);
 
         ClipboardManager clipboard = (ClipboardManager) requireContext().getSystemService(Context.CLIPBOARD_SERVICE);
-        Button copyBtn = view.findViewById(R.id.copyLocation);
-        copyBtn.setOnClickListener(v -> {
-            if (mMap != null) {
-                LatLng center = mMap.getCameraPosition().target; // Map center
-                if (startMarker != null) {
-                    startMarker.remove();
-                }
-
-                if (endMarker != null) {
-                    endMarker.remove();
-                }
-
-                // নতুন marker add করা
-                startMarker = mMap.addMarker(new MarkerOptions()
-                        .position(center)
-                        .title("Selected Location"));
-
-                String lat = String.format(Locale.US, "%.5f", center.latitude);
-                String lng = String.format(Locale.US, "%.5f", center.longitude);
-
-                // Clipboard এ copy করা
-                ClipData clip = ClipData.newPlainText("LatLng", lat + "," + lng);
-                clipboard.setPrimaryClip(clip);
-
-                Toast.makeText(requireContext(), "Copied: " + lat + "," + lng, Toast.LENGTH_SHORT).show();
-            }
-        });
 
         if (mapFragment != null) {
             mapFragment.getMapAsync(googleMap -> {
@@ -116,30 +89,27 @@ public class LocationFragment extends Fragment {
 
                 mMap.getUiSettings().setMyLocationButtonEnabled(true);
 
-                mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-                    @Override
-                    public void onMapClick(LatLng latLng) {
+                mMap.setOnMapClickListener(latLng -> {
 
-                        if (startMarker != null) {
-                            startMarker.remove();
-                        }
-
-                        if (endMarker != null) {
-                            endMarker.remove();
-                        }
-
-                        startMarker = mMap.addMarker(new MarkerOptions()
-                                .position(latLng)
-                                .title("Selected Location"));
-
-                        String lat = String.format(Locale.US, "%.5f", latLng.latitude);
-                        String lng = String.format(Locale.US, "%.5f", latLng.longitude);
-
-                        ClipData clip = ClipData.newPlainText("LatLng", lat + "," + lng);
-                        clipboard.setPrimaryClip(clip);
-
-                        Toast.makeText(requireContext(), "Copied: " + lat + "," + lng, Toast.LENGTH_SHORT).show();
+                    if (startMarker != null) {
+                        startMarker.remove();
                     }
+
+                    if (endMarker != null) {
+                        endMarker.remove();
+                    }
+
+                    startMarker = mMap.addMarker(new MarkerOptions()
+                            .position(latLng)
+                            .title("Selected Location"));
+
+                    String lat = String.format(Locale.US, "%.5f", latLng.latitude);
+                    String lng = String.format(Locale.US, "%.5f", latLng.longitude);
+
+                    ClipData clip = ClipData.newPlainText("LatLng", lat + "," + lng);
+                    clipboard.setPrimaryClip(clip);
+
+                    Toast.makeText(requireContext(), "Copied: " + lat + "," + lng, Toast.LENGTH_SHORT).show();
                 });
 
                 mMap.setOnCameraMoveListener(() -> {
