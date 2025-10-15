@@ -250,7 +250,7 @@ public class LocationFragment extends Fragment {
 
             removeAllView();
 
-            float mapZoom = zoom;
+            float mapZoom = 15;
             innerCircle = new ArrayList<>();
             outerCircle = new ArrayList<>();
 
@@ -261,7 +261,7 @@ public class LocationFragment extends Fragment {
                     JSONObject value = route.getJSONObject(key);
                     boolean isSelect = id != null && !id.isEmpty() && key.equals(id);
                     if (isSelect) {
-                        mapZoom = (float) value.optDouble("x", zoom);
+                        mapZoom = (float) value.optDouble("z", 15);
                     }
                     JSONArray list = value.optJSONArray("l");
                     if (list != null) {
