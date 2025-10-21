@@ -25,6 +25,7 @@ public class App extends Application {
 
         prefs = getSharedPreferences("BusTracker", MODE_PRIVATE);
 
+        api.firebaseInitialized(this);
         api.subscribeNotification(this, null);
     }
 

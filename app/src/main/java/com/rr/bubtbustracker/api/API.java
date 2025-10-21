@@ -198,6 +198,44 @@ public class API {
         });
     }
 
+    public void notification(String email, String body, String bus, ApiCallback<JSONObject> callback) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            JSONObject result = null;
+            try {
+                readServerData();
+
+                if (serverData != null) {
+                    String token = App.getToken();
+                    if (!token.isEmpty()) {
+                        JSONObject json = new JSONObject();
+                        json.put("title", email);
+                        json.put("body", body);
+                        json.put("bus", bus);
+                        json.put("token", token);
+
+                        Request request = new Request.Builder()
+                                .url(serverData.optString("host")+"notification")
+                                .post(RequestBody.create(json.toString(), JSON))
+                                .build();
+
+                        Response response = client.newCall(request).execute();
+                        if (response.isSuccessful()) {
+                            result = new JSONObject(response.body().string());
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            JSONObject finalResult = result;
+
+            handler.post(() -> {
+                if (callback != null) {
+                    callback.onResult(finalResult);
+                }
+            });
+        });
+    }
+
     public void busChange(String id, String bus, ApiCallback<JSONObject> callback) {
         Executors.newSingleThreadExecutor().execute(() -> {
             JSONObject result = null;
@@ -382,24 +420,7 @@ public class API {
     public void subscribeNotification(Context context, Callback callback) {
         try {
             if (App.getString("subscribe", "").isEmpty()) {
-                boolean isConfig = true;
-                if (FirebaseApp.getApps(context).isEmpty()) {
-                    isConfig = false;
-                    String requestToken = App.getString("requestToken", "");
-                    if (!requestToken.isEmpty()) {
-                        String[] tokenParts = App.decryption(requestToken).split("\\|");
-                        if (tokenParts.length >= 5) {
-                            FirebaseOptions options = new FirebaseOptions.Builder()
-                                    .setApiKey(tokenParts[0])
-                                    .setApplicationId(tokenParts[2])
-                                    .setProjectId(tokenParts[4])
-                                    .build();
-
-                            FirebaseApp.initializeApp(context, options);
-                            isConfig = true;
-                        }
-                    }
-                }
+                boolean isConfig = firebaseInitialized(context);
 
                 if (isConfig) {
                     String bus = App.getString("bus", "Padma").toUpperCase();
@@ -428,24 +449,7 @@ public class API {
         try {
             String bus = App.getString("subscribe", "");
             if (!bus.isEmpty()) {
-                boolean isConfig = true;
-                if (FirebaseApp.getApps(context).isEmpty()) {
-                    isConfig = false;
-                    String requestToken = App.getString("requestToken", "");
-                    if (!requestToken.isEmpty()) {
-                        String[] tokenParts = App.decryption(requestToken).split("\\|");
-                        if (tokenParts.length >= 5) {
-                            FirebaseOptions options = new FirebaseOptions.Builder()
-                                    .setApiKey(tokenParts[0])
-                                    .setApplicationId(tokenParts[2])
-                                    .setProjectId(tokenParts[4])
-                                    .build();
-
-                            FirebaseApp.initializeApp(context, options);
-                            isConfig = true;
-                        }
-                    }
-                }
+                boolean isConfig = firebaseInitialized(context);
 
                 if (isConfig) {
                     FirebaseMessaging.getInstance().unsubscribeFromTopic(bus).addOnCompleteListener(task -> {
@@ -467,6 +471,28 @@ public class API {
         } catch (Exception e) {
             if (callback != null) callback.onStatus(false);
         }
+    }
+
+    public boolean firebaseInitialized(Context context) {
+        boolean isConfig = true;
+        if (FirebaseApp.getApps(context).isEmpty()) {
+            isConfig = false;
+            String requestToken = App.getString("requestToken", "");
+            if (!requestToken.isEmpty()) {
+                String[] tokenParts = App.decryption(requestToken).split("\\|");
+                if (tokenParts.length >= 5) {
+                    FirebaseOptions options = new FirebaseOptions.Builder()
+                            .setApiKey(tokenParts[0])
+                            .setApplicationId(tokenParts[2])
+                            .setProjectId(tokenParts[4])
+                            .build();
+
+                    FirebaseApp.initializeApp(context, options);
+                    isConfig = true;
+                }
+            }
+        }
+        return isConfig;
     }
 
     private void readServerData() throws IOException, JSONException {

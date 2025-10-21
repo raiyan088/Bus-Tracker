@@ -5,6 +5,7 @@ import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Build;
@@ -31,6 +32,7 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.GravityCompat;
@@ -50,6 +52,7 @@ import com.rr.bubtbustracker.fragment.LocationFragment;
 import com.rr.bubtbustracker.fragment.NotificationFragment;
 import com.rr.bubtbustracker.fragment.ScheduleFragment;
 import com.rr.bubtbustracker.interfaces.OnBusClickListener;
+import com.rr.bubtbustracker.services.MyNotificationService;
 import com.rr.bubtbustracker.view.BusListBottomView;
 import com.rr.bubtbustracker.view.ScheduleBottomView;
 
@@ -235,6 +238,12 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
                 });
             }
         });
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 3122);
+            }
+        }
 
         LinearLayout scheduleLayout = main.findViewById(R.id.schedule_layout);
         LinearLayout notificationLayout = main.findViewById(R.id.notification_layout);
