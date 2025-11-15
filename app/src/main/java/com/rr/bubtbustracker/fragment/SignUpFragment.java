@@ -125,7 +125,7 @@ public class SignUpFragment extends Fragment {
                                 App.saveString("name", nameText);
                                 App.saveString("bus", selectedBus.toUpperCase());
                                 App.saveString("email", emailText);
-                                App.saveString("rule", "STUDENT");
+                                App.saveString("role", "STUDENT");
                                 App.saveBoolean("verified", false);
                                 App.saveString("id", json.getString("id"));
                                 App.saveString("accessToken", json.optString("accessToken", ""));

@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        new Handler(Looper.getMainLooper()).postDelayed(this::initViews, 720);
+        new Handler(Looper.getMainLooper()).postDelayed(this::initViews, 1500);
     }
 
     @SuppressLint("InflateParams")

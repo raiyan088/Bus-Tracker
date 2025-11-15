@@ -419,26 +419,30 @@ public class API {
 
     public void subscribeNotification(Context context, Callback callback) {
         try {
-            if (App.getString("subscribe", "").isEmpty()) {
-                boolean isConfig = firebaseInitialized(context);
+            if (App.getString("role", "").equals("STUDENT")) {
+                if (App.getString("subscribe", "").isEmpty()) {
+                    boolean isConfig = firebaseInitialized(context);
 
-                if (isConfig) {
-                    String bus = App.getString("bus", "Padma").toUpperCase();
-                    FirebaseMessaging.getInstance().subscribeToTopic(bus).addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            App.saveString("subscribe", bus);
-                            if (callback != null) callback.onStatus(true);
-                        } else {
+                    if (isConfig) {
+                        String bus = App.getString("bus", "Padma").toUpperCase();
+                        FirebaseMessaging.getInstance().subscribeToTopic(bus).addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                App.saveString("subscribe", bus);
+                                if (callback != null) callback.onStatus(true);
+                            } else {
+                                if (callback != null) callback.onStatus(false);
+                            }
+                        }).addOnFailureListener(e -> {
                             if (callback != null) callback.onStatus(false);
-                        }
-                    }).addOnFailureListener(e -> {
+                        });
+                    } else {
                         if (callback != null) callback.onStatus(false);
-                    });
+                    }
                 } else {
                     if (callback != null) callback.onStatus(false);
                 }
             } else {
-                if (callback != null) callback.onStatus(false);
+                if (callback != null) callback.onStatus(true);
             }
         } catch (Exception e) {
             if (callback != null) callback.onStatus(false);
@@ -447,26 +451,30 @@ public class API {
 
     public void unSubscribeNotification(Context context, Callback callback) {
         try {
-            String bus = App.getString("subscribe", "");
-            if (!bus.isEmpty()) {
-                boolean isConfig = firebaseInitialized(context);
+            if (App.getString("role", "").equals("STUDENT")) {
+                String bus = App.getString("subscribe", "");
+                if (!bus.isEmpty()) {
+                    boolean isConfig = firebaseInitialized(context);
 
-                if (isConfig) {
-                    FirebaseMessaging.getInstance().unsubscribeFromTopic(bus).addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            App.saveString("subscribe", "");
-                            if (callback != null) callback.onStatus(true);
-                        } else {
+                    if (isConfig) {
+                        FirebaseMessaging.getInstance().unsubscribeFromTopic(bus).addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                App.saveString("subscribe", "");
+                                if (callback != null) callback.onStatus(true);
+                            } else {
+                                if (callback != null) callback.onStatus(false);
+                            }
+                        }).addOnFailureListener(e -> {
                             if (callback != null) callback.onStatus(false);
-                        }
-                    }).addOnFailureListener(e -> {
+                        });
+                    } else {
                         if (callback != null) callback.onStatus(false);
-                    });
+                    }
                 } else {
                     if (callback != null) callback.onStatus(false);
                 }
             } else {
-                if (callback != null) callback.onStatus(false);
+                if (callback != null) callback.onStatus(true);
             }
         } catch (Exception e) {
             if (callback != null) callback.onStatus(false);

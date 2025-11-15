@@ -101,7 +101,7 @@ public class LoginFragment extends Fragment {
                                 App.saveString("email", emailText);
                                 App.saveString("id", json.getString("id"));
                                 App.saveString("name", json.optString("name", ""));
-                                App.saveString("rule", json.optString("rule", "").toUpperCase());
+                                App.saveString("role", json.optString("role", "").toUpperCase());
                                 App.saveString("bus", json.optString("bus", "").toUpperCase());
                                 App.saveBoolean("verified", json.optBoolean("verified", false));
                                 App.saveString("accessToken", json.optString("accessToken", ""));
@@ -168,7 +168,6 @@ public class LoginFragment extends Fragment {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         intent.setAction(App.LOGIN_SUCCESS);
         startActivity(intent);
-        requireActivity().overridePendingTransition(0, 0);
     }
 
     private void goToSignUpPage() {

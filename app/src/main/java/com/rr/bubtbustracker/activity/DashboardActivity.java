@@ -95,7 +95,7 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
             if (intent != null && Objects.equals(intent.getAction(), App.LOGIN_SUCCESS)) {
                 initViews(false);
             } else {
-                new Handler(Looper.getMainLooper()).postDelayed(() -> initViews(true), 720);
+                new Handler(Looper.getMainLooper()).postDelayed(() -> initViews(true), 1500);
             }
         } else {
             Intent intent = new Intent(this, MainActivity.class);

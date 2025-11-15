@@ -270,7 +270,6 @@ public class VerificationFragment extends Fragment {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         intent.setAction(App.LOGIN_SUCCESS);
         startActivity(intent);
-        requireActivity().overridePendingTransition(0, 0);
     }
 
     private void goToLoginPage() {
