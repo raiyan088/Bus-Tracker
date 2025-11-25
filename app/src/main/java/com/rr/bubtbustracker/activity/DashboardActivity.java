@@ -637,13 +637,43 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
             Toast.makeText(this, "Settings clicked", Toast.LENGTH_SHORT).show();
             return true;
         } else if (id == R.id.action_logout) {
-            App.saveString("schedule", "[]");
-            App.saveLong("schedule_update", 0);
-            Toast.makeText(this, "schedule clear", Toast.LENGTH_SHORT).show();
+            logoutAccount();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void logoutAccount() {
+        new AlertDialog.Builder(this)
+                .setTitle("Logout account")
+                .setMessage("Are you sure you want to logout?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    dialog.dismiss();
+
+                    ProgressDialog loading = new ProgressDialog(this);
+                    loading.setMessage("Logout account...");
+                    loading.setCancelable(false);
+                    loading.show();
+
+                    mAPI.unSubscribeNotification(getApplicationContext(), unSubscribe -> {
+                        if (loading.isShowing()) loading.dismiss();
+                        if (unSubscribe) {
+                            Toast.makeText(this, "Logout Success", Toast.LENGTH_SHORT).show();
+                            App.clearAll();
+                            mAPI.closeConnection();
+
+                            Intent intent = new Intent(this, MainActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                        } else {
+                            Toast.makeText(this, "Logout Failed", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
+                .show();
+
     }
 
     @Override

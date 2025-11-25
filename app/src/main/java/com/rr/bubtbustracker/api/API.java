@@ -47,8 +47,8 @@ import okhttp3.Response;
 
 public class API {
 
-//    private static final String BASE_URL = "https://bus-tracker.raiyan086.xyz/";
-    private static final String BASE_URL = "http://192.168.0.197:9099/";
+    private static final String BASE_URL = "https://bus-tracker.raiyan086.xyz/";
+//    private static final String BASE_URL = "http://192.168.0.197:9099/";
 
     public interface Callback {
         void onStatus(boolean status);
@@ -250,6 +250,20 @@ public class API {
         mWebSocketClient.setReadTimeout(600000);
         mWebSocketClient.enableAutomaticReconnection(10000);
         mWebSocketClient.connect();
+    }
+
+    public void closeConnection() {
+        try {
+            if (mWebSocketClient != null) {
+                try {
+                    mWebSocketClient.disableAutomaticReconnection();
+                    mWebSocketClient.close(0, 1000, "manual close");
+                } catch (Exception ignored) {}
+
+                mWebSocketClient = null;
+
+            }
+        } catch (Exception ignored) {}
     }
 
     public void readLocationRoute(long time, String bus) {
@@ -486,40 +500,6 @@ public class API {
 
                     Request request = new Request.Builder()
                             .url(BASE_URL+"reset")
-                            .post(RequestBody.create(json.toString(), JSON))
-                            .build();
-
-                    Response response = client.newCall(request).execute();
-                    if (response.isSuccessful()) {
-                        result = new JSONObject(response.body().string());
-                    }
-                }
-            } catch (Exception ignored) {}
-
-            JSONObject finalResult = result;
-
-            handler.post(() -> {
-                if (callback != null) {
-                    callback.onResult(finalResult);
-                }
-            });
-        });
-    }
-
-    public void notification(String email, String body, String bus, ApiCallback<JSONObject> callback) {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            JSONObject result = null;
-            try {
-                String token = App.getToken();
-                if (!token.isEmpty()) {
-                    JSONObject json = new JSONObject();
-                    json.put("title", email);
-                    json.put("body", body);
-                    json.put("bus", bus);
-                    json.put("token", token);
-
-                    Request request = new Request.Builder()
-                            .url(BASE_URL+"notification")
                             .post(RequestBody.create(json.toString(), JSON))
                             .build();
 

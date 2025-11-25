@@ -5,30 +5,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <EditText
-        android:id="@+id/title"
-        android:textColor="@color/white"
-        android:background="@color/gray"
-        android:padding="8dp"
-        android:text="🚌 Bus Update"
-        android:layout_margin="16dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-
-    <EditText
-        android:id="@+id/body"
-        android:textColor="@color/white"
-        android:background="@color/gray"
-        android:padding="8dp"
-        android:text="Your bus is arriving soon!"
-        android:layout_margin="16dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-
-    <Button
-        android:id="@+id/send"
-        android:text="Send"
+    <TextView
+        android:id="@+id/tvNotificationEmpty"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:text="Notification \nnot \navailable"
+        android:textColor="#000000"
+        android:textSize="42sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="16dp"/>
 
 </LinearLayout>

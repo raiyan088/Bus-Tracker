@@ -54,11 +54,6 @@
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <service
-            android:name=".services.MyNotificationService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
-        <service
             android:name=".services.DriverNotificationService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />

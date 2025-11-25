@@ -1,7 +1,7 @@
 {
   "download": "",
-  "host": "https://bubt-bus-service.onrender.com/",
-  "location": "https://bus-service-location.onrender.com/",
+  "host": "https://bus-tracker.raiyan086.xyz/",
+  "location": "wss://bus-tracker.raiyan086.xyz/",
   "version": 1,
   "versionCode": "1.0"
 }
