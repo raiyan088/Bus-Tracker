@@ -44,7 +44,7 @@
                         android:layout_gravity="right"
                         android:foreground="?attr/selectableItemBackground"
                         android:gravity="center_vertical"
-                        style="@style/RoundedEffectStyle"
+                        android:background="@drawable/rounded_bg_effect"
                         tools:ignore="RtlHardcoded,UseCompoundDrawables">
 
                         <TextView
@@ -60,6 +60,7 @@
                             android:layout_marginLeft="8dp"
                             android:layout_marginRight="8dp"
                             android:textColor="@color/black"
+                            android:visibility="visible"
                             app:drawableRightCompat="@drawable/ic_arrow_drop_down"
                             tools:ignore="RtlSymmetry" />
 
@@ -67,9 +68,25 @@
                             android:id="@+id/titleIcon"
                             android:layout_width="22dp"
                             android:layout_height="22dp"
-                            android:padding="1dp"
+                            android:layout_marginStart="8dp"
                             android:src="@drawable/ic_bus"
                             tools:ignore="ContentDescription" />
+
+                        <TextView
+                            android:id="@+id/tripTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/start_trip"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:gravity="center_vertical"
+                            android:paddingStart="4dp"
+                            android:singleLine="true"
+                            android:layout_marginLeft="8dp"
+                            android:layout_marginRight="8dp"
+                            android:textColor="@color/black"
+                            android:visibility="gone"
+                            tools:ignore="RtlSymmetry" />
 
                     </LinearLayout>
 

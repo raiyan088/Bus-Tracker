@@ -1,24 +1,26 @@
 package com.rr.bubtbustracker.activity;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Process;
+import android.provider.Settings;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
@@ -29,6 +31,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -42,39 +45,48 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.rr.bubtbustracker.App;
 import com.rr.bubtbustracker.R;
 import com.rr.bubtbustracker.api.API;
+import com.rr.bubtbustracker.db.TripDatabaseHelper;
 import com.rr.bubtbustracker.fragment.LocationFragment;
 import com.rr.bubtbustracker.fragment.NotificationFragment;
 import com.rr.bubtbustracker.fragment.ScheduleFragment;
+import com.rr.bubtbustracker.interfaces.FragmentReadyListener;
+import com.rr.bubtbustracker.interfaces.LocationCallback;
 import com.rr.bubtbustracker.interfaces.OnBusClickListener;
-import com.rr.bubtbustracker.services.MyNotificationService;
+import com.rr.bubtbustracker.interfaces.TripStatusListener;
 import com.rr.bubtbustracker.view.BusListBottomView;
 import com.rr.bubtbustracker.view.ScheduleBottomView;
 
 import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
 
 
-public class DashboardActivity extends AppCompatActivity implements OnBusClickListener {
+public class DashboardActivity extends AppCompatActivity implements OnBusClickListener, LocationCallback, FragmentReadyListener, TripStatusListener {
 
     private String mToday = "Friday";
-    private String mBusName = "Padma";
+    private String mBusName = "";
     private int tabClick = 1;
     private int blue;
     private int gray;
-    boolean isFridayClicked = false;
-    boolean isOtherDayClicked = false;
+    private boolean isFridayClicked = false;
+    private boolean isOtherDayClicked = false;
+    private boolean isDriver = false;
+    private boolean isStartTrip = false;
+    private boolean isStartTripView = false;
     private LinearLayout titleClick;
     private TextView titleName;
+    private TextView tripTitle;
     private ImageView titleIcon;
     private ImageView actionSchedule;
     private ImageView actionNotification;
@@ -84,6 +96,14 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
     private ScheduleFragment scheduleFragment;
     private LocationFragment locationFragment;
     private NotificationFragment notificationFragment;
+    private TripDatabaseHelper dbHelper;
+    private LatLng pendingLatLng;
+    private String pendingId = "";
+    private String pendingFrom = "";
+    private String pendingTo = "";
+    private boolean isPending = false;
+
+    private API mAPI;
 
     @SuppressLint("PrivateResource")
     @Override
@@ -129,6 +149,7 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
         setupWindow(dashboard);
     }
 
+    @SuppressLint("SetTextI18n")
     private void setupWindow(View main) {
         Window window = getWindow();
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
@@ -178,10 +199,10 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
 
         titleClick = main.findViewById(R.id.titleClick);
         titleName = main.findViewById(R.id.titleName);
+        tripTitle = main.findViewById(R.id.tripTitle);
         titleIcon = main.findViewById(R.id.titleIcon);
 
-        mBusName = capitalizeFirst(App.getString("bus", "Padma"));
-        titleName.setText(mBusName);
+        mBusName = capitalizeFirst(App.getString("bus", ""));
 
         scheduleFragment = new ScheduleFragment();
         locationFragment = new LocationFragment();
@@ -195,29 +216,63 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
         ft.add(R.id.container, notificationFragment, "notification").hide(notificationFragment);
         ft.commit();
 
-        API api = new API();
+        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        mAPI = API.getAPI(this);
+        dbHelper = new TripDatabaseHelper(this);
+        mAPI.setLocationCallback(this);
+        mAPI.setTripStatusCallback(this);
+        mAPI.setDatabaseHelper(dbHelper);
+        mAPI.connectWebsocket();
+
+        isStartTripView = false;
+        isDriver = App.isDriver();
+        isStartTrip = App.isStartTrip();
+
+        if (isDriver) {
+            titleName.setVisibility(View.GONE);
+            tripTitle.setVisibility(View.VISIBLE);
+            if (isStartTrip) {
+                tripTitle.setText("End Trip");
+                titleClick.setBackgroundResource(R.drawable.rounded_red_bg);
+            } else {
+                tripTitle.setText("Start Trip");
+                titleClick.setBackgroundResource(R.drawable.rounded_green_bg);
+            }
+        } else {
+            titleName.setText(mBusName);
+            titleClick.setBackgroundResource(R.drawable.rounded_bg_effect);
+        }
 
         titleClick.setOnClickListener(v -> {
             if (tabClick == 1) {
-                new BusListBottomView(this, null, null, newBus -> {
-                    String currentBus = App.getString("bus", "Padma");
-                    if (!Objects.equals(currentBus.toUpperCase(), newBus.toUpperCase())) {
-                        new AlertDialog.Builder(this)
-                                .setTitle("Bus Change Warning")
-                                .setMessage("Changing from " + capitalizeFirst(currentBus) + " to " + newBus + ".\n\n" +
-                                        "• Your notification will be updated.\n" +
-                                        "• App data may be refreshed.\n" +
-                                        "• Make sure you want to continue.")
-                                .setCancelable(false)
-                                .setPositiveButton("Continue", (dialog, which) -> {
-                                    busChange(api, titleName, newBus);
-                                })
-                                .setNegativeButton("Cancel", (dialog, which) -> {
-                                    dialog.dismiss();
-                                })
-                                .show();
+                if (isDriver) {
+                    if (isStartTrip) {
+                        stopBusTrip();
+                    } else {
+                        checkLocationPermission();
                     }
-                });
+                } else {
+                    new BusListBottomView(this, null, null, newBus -> {
+                        String currentBus = App.getString("bus", "");
+                        if (!Objects.equals(currentBus.toUpperCase(), newBus.toUpperCase())) {
+                            new AlertDialog.Builder(this)
+                                    .setTitle("Bus Change Warning")
+                                    .setMessage("Changing from " + capitalizeFirst(currentBus) + " to " + newBus + ".\n\n" +
+                                            "• Your notification will be updated.\n" +
+                                            "• App data may be refreshed.\n" +
+                                            "• Make sure you want to continue.")
+                                    .setCancelable(false)
+                                    .setPositiveButton("Continue", (dialog, which) -> {
+                                        busChange(titleName, newBus);
+                                    })
+                                    .setNegativeButton("Cancel", (dialog, which) -> {
+                                        dialog.dismiss();
+                                    })
+                                    .show();
+                        }
+                    });
+                }
             } else {
                 new ScheduleBottomView(this, titleName, selectDay -> {
                     if (selectDay.equals("Friday")) {
@@ -271,7 +326,7 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
                 actionNotification.setColorFilter(gray);
                 notificationText.setTextColor(gray);
 
-                changeTitle(titleClick, titleName, titleIcon, "Schedule", mToday, R.drawable.ic_schedule, true);
+                changeTitle(titleClick, titleName, tripTitle, titleIcon, "Schedule", mToday, R.drawable.ic_schedule, true);
 
                 fragmentManager.beginTransaction()
                         .setCustomAnimations(R.anim.fade_in_short, R.anim.fade_out_short)
@@ -291,7 +346,7 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
                 actionSchedule.setColorFilter(gray);
                 scheduleText.setTextColor(gray);
 
-                changeTitle(titleClick, titleName, titleIcon, "Notification","", 0, false);
+                changeTitle(titleClick, titleName, tripTitle, titleIcon, "Notification","", 0, false);
 
                 fragmentManager.beginTransaction()
                         .setCustomAnimations(R.anim.fade_in_short, R.anim.fade_out_short)
@@ -305,7 +360,119 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
         locationFab.setOnClickListener(v -> {
             if (tabClick != 1) {
                 locationTabClick();
+            } else {
+                locationFragment.viewCurrentPosition(true);
             }
+        });
+    }
+
+    private void checkLocationPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 9099);
+        } else {
+            checkGpsEnabled();
+        }
+    }
+
+    private void checkGpsEnabled() {
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            startActivity(intent);
+        } else {
+            showStartTripDialog();
+        }
+    }
+
+    private void showStartTripDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Start Bus Trip")
+                .setMessage("Are you sure you want to start this bus trip?")
+                .setPositiveButton("Start", (dialog, which) -> {
+                    getCurrentLocation();
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void getCurrentLocation() {
+        ProgressDialog loading = new ProgressDialog(this);
+        loading.setMessage("Read Current Location...");
+        loading.setCancelable(false);
+        loading.show();
+
+        mAPI.getCurrentLocation((lat, lng) -> {
+            if (lat > 0 && lng > 0) {
+                loading.setMessage("Starting bus trip...");
+                String bus = App.getString("bus", "");
+                mAPI.startTrip(bus, lat, lng, json -> {
+                    if (loading.isShowing()) loading.dismiss();
+                    String message = "Request Error! Please try again.";
+                    try {
+                        if (json != null) {
+                            String status = json.optString("status");
+                            if (!status.isEmpty()) {
+                                if (status.equals("SUCCESS")) {
+                                    isStartTrip = true;
+                                    App.saveBoolean("start_trip", true);
+                                    message = "Trip Start Success!";
+                                    tripTitle.setText("End Trip");
+                                    dbHelper.clearTrip();
+                                    App.saveInt("demo_load", 0);
+                                    locationFragment.startBusTrip(dbHelper, false);
+                                    titleClick.setBackgroundResource(R.drawable.rounded_red_bg);
+                                    mAPI.startLocationShare(bus, new LatLng(lat, lng));
+                                } else {
+                                    message = mAPI.getMessage(status);
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        message = "Exception Error! Please try again.";
+                    }
+                    if (!message.isEmpty()) Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+                });
+            } else {
+                if (loading.isShowing()) loading.dismiss();
+                Toast.makeText(this, "Location not found", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void stopBusTrip() {
+        ProgressDialog loading = new ProgressDialog(this);
+        loading.setMessage("Stop bus trip...");
+        loading.setCancelable(false);
+        loading.show();
+
+        String bus = App.getString("bus", "");
+        mAPI.stopTrip(bus,  json -> {
+            if (loading.isShowing()) loading.dismiss();
+            String message = "Request Error! Please try again.";
+            try {
+                if (json != null) {
+                    String status = json.optString("status");
+                    if (!status.isEmpty()) {
+                        if (status.equals("SUCCESS")) {
+                            isStartTrip = false;
+                            message = "Trip Stop Success!";
+                            tripTitle.setText("Start Trip");
+                            App.saveBoolean("start_trip", false);
+                            titleClick.setBackgroundResource(R.drawable.rounded_green_bg);
+                            locationFragment.stopBusTrip();
+                            mAPI.stopLocationShare();
+                        } else {
+                            message = mAPI.getMessage(status);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                message = "Exception Error! Please try again.";
+            }
+            if (!message.isEmpty()) Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -317,7 +484,7 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
         actionSchedule.setColorFilter(gray);
         scheduleText.setTextColor(gray);
 
-        changeTitle(titleClick, titleName, titleIcon, "Location", mBusName, R.drawable.ic_bus, true);
+        changeTitle(titleClick, titleName, tripTitle, titleIcon, "Location", mBusName, R.drawable.ic_bus, true);
 
         fragmentManager.beginTransaction()
                 .setCustomAnimations(R.anim.fade_in_short, R.anim.fade_out_short)
@@ -327,13 +494,13 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
                 .commit();
     }
 
-    private void busChange(API api, TextView busName, String newBus) {
+    private void busChange(TextView busName, String newBus) {
         ProgressDialog loading = new ProgressDialog(this);
         loading.setMessage("Changing bus...");
         loading.setCancelable(false);
         loading.show();
 
-        api.busChange(App.getString("id", ""), newBus.toUpperCase(), json -> {
+        mAPI.busChange(App.getString("id", ""), newBus.toUpperCase(), json -> {
             if (loading.isShowing()) loading.dismiss();
             String message = "Request Error! Please try again.";
             try {
@@ -342,9 +509,9 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
                     if (!status.isEmpty()) {
                         if (status.equals("SUCCESS")) {
                             message = "";
-                            subscriptionChange(api, busName, newBus);
+                            subscriptionChange(busName, newBus);
                         } else {
-                            message = api.getMessage(status);
+                            message = mAPI.getMessage(status);
                         }
                     }
                 }
@@ -355,23 +522,31 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
         });
     }
 
-    private void subscriptionChange(API api, TextView busName, String newBus) {
+    private void subscriptionChange(TextView busName, String newBus) {
         ProgressDialog loading = new ProgressDialog(this);
         loading.setMessage("Unsubscribing from old bus...");
         loading.setCancelable(false);
         loading.show();
 
-        api.unSubscribeNotification(getApplicationContext(), unSubscribe -> {
+        mAPI.unSubscribeNotification(getApplicationContext(), unSubscribe -> {
             if (unSubscribe) {
                 mBusName = newBus;
                 loading.setMessage("Subscribing to new bus...");
                 App.saveString("bus", newBus.toUpperCase());
                 busName.setText(newBus);
-                api.subscribeNotification(getApplicationContext(), subscribe -> {
+                mAPI.subscribeNotification(getApplicationContext(), subscribe -> {
                     if (loading.isShowing()) loading.dismiss();
-                    loadBusLocation(newBus);
                     if (subscribe) {
                         Toast.makeText(this, "Bus changed to " + newBus, Toast.LENGTH_SHORT).show();
+                        new AlertDialog.Builder(this)
+                                .setTitle("Application Restart")
+                                .setMessage("Application need restart for bus change to take effect")
+                                .setCancelable(false)
+                                .setPositiveButton("Restart", (dialog, which) -> {
+                                    Process.killProcess(Process.myPid());
+                                    System.exit(1);
+                                })
+                                .show();
                     } else {
                         Toast.makeText(this, "Bus changed but subscription failed", Toast.LENGTH_SHORT).show();
                     }
@@ -383,17 +558,31 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
         });
     }
 
-    private void loadBusLocation(String busName) {
-
-    }
-
-    private void changeTitle(View titleClick, TextView titleName, ImageView titleIcon, String title, String newText, int newIcon, boolean visible) {
-        titleName.animate().alpha(0f).setDuration(125).withEndAction(() -> {
-            titleName.setText(newText);
-            ActionBar actionBar = getSupportActionBar();
-            if (actionBar != null) actionBar.setTitle(title);
-            titleName.animate().alpha(1f).setDuration(125).start();
-        }).start();
+    private void changeTitle(View titleClick, TextView titleName, TextView tripTitle, ImageView titleIcon, String title, String newText, int newIcon, boolean visible) {
+        if (isDriver && title.equals("Location")) {
+            if (isStartTrip) {
+                titleClick.setBackgroundResource(R.drawable.rounded_red_bg);
+            } else {
+                titleClick.setBackgroundResource(R.drawable.rounded_green_bg);
+            }
+            tripTitle.animate().alpha(0f).setDuration(125).withEndAction(() -> {
+                tripTitle.setVisibility(View.VISIBLE);
+                titleName.setVisibility(View.GONE);
+                ActionBar actionBar = getSupportActionBar();
+                if (actionBar != null) actionBar.setTitle(title);
+                tripTitle.animate().alpha(1f).setDuration(125).start();
+            }).start();
+        } else {
+            titleClick.setBackgroundResource(R.drawable.rounded_bg_effect);
+            titleName.animate().alpha(0f).setDuration(125).withEndAction(() -> {
+                tripTitle.setVisibility(View.GONE);
+                titleName.setVisibility(View.VISIBLE);
+                titleName.setText(newText);
+                ActionBar actionBar = getSupportActionBar();
+                if (actionBar != null) actionBar.setTitle(title);
+                titleName.animate().alpha(1f).setDuration(125).start();
+            }).start();
+        }
 
         titleIcon.animate().alpha(0f).setDuration(125).withEndAction(() -> {
             titleIcon.setImageResource(newIcon);
@@ -410,7 +599,7 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
             titleClick.animate()
                     .alpha(0f)
                     .setDuration(250)
-                    .withEndAction(() -> titleClick.setVisibility(View.INVISIBLE))
+                    .withEndAction(() -> titleClick.setVisibility(View.GONE))
                     .start();
         }
     }
@@ -455,5 +644,102 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == 9099) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                checkGpsEnabled();
+            } else {
+                Toast.makeText(this, "Location permission required!", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    public void onLocationReceived(double lat, double lng) {
+        if (lat <= 0 || lng <= 0) return;
+
+        if (locationFragment == null || !locationFragment.isAdded() || locationFragment.getView() == null)  {
+            pendingLatLng = new LatLng(lat, lng);
+            return;
+        }
+
+        pendingLatLng = null;
+        runOnUiThread(() -> locationFragment.setBusLocation(new LatLng(lat, lng), null, isDriver));
+    }
+
+    @Override
+    public void onLocationReady() {
+        if (isDriver && isStartTrip && locationFragment != null) {
+            locationFragment.startBusTrip(dbHelper, true);
+            mAPI.startLocationShare(App.getString("bus", ""), null);
+        } else if (isStartTrip) {
+            if (pendingLatLng != null) runOnUiThread(() -> locationFragment.setBusLocation(pendingLatLng, null, isDriver));
+            if (isPending) {
+                if (!App.getString("trip_id", "").equals(pendingId)) {
+                    dbHelper.clearTrip();
+                    App.saveString("trip_id", pendingId);
+                }
+                runOnUiThread(() -> locationFragment.viewTripStart(dbHelper, pendingFrom, pendingTo));
+            }
+        }
+    }
+
+    @Override
+    public void readLocationRoute(long time) {
+        mAPI.readLocationRoute(time, App.getString("bus", ""));
+    }
+
+    @Override
+    public void tripStatus(long id, boolean start, String from, String to) {
+        if (!isDriver) {
+            isStartTrip = start;
+        }
+
+        if (locationFragment == null || !locationFragment.isAdded() || locationFragment.getView() == null) {
+            isPending = true;
+            pendingId = App.getString("bus", "")+"_"+id;
+            pendingFrom = from;
+            pendingTo = to;
+            return;
+        }
+
+        if (start) {
+            if (!isStartTripView) {
+                isPending = false;
+                isStartTripView = true;
+                String bus = App.getString("bus", "");
+                if (!App.getString("trip_id", "").equals(bus+"_"+id)) {
+                    dbHelper.clearTrip();
+                    App.saveString("trip_id", bus+"_"+id);
+                }
+                runOnUiThread(() -> locationFragment.viewTripStart(dbHelper, from, to));
+            }
+        } else if (isStartTripView) {
+            isStartTripView = false;
+            runOnUiThread(() -> locationFragment.stopBusTrip());
+        }
+    }
+
+    @Override
+    public void readLocationRoute(ArrayList<LatLng> list) {
+        if (locationFragment == null || !locationFragment.isAdded() || locationFragment.getView() == null)  {
+            return;
+        }
+
+        runOnUiThread(() -> locationFragment.updateBusRoute(list));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        locationFragment = null;
+        scheduleFragment = null;
+        notificationFragment = null;
     }
 }

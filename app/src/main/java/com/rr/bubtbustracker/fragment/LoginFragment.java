@@ -50,7 +50,7 @@ public class LoginFragment extends Fragment {
         CustomInputView emailInput = view.findViewById(R.id.email_input);
         CustomInputView passInput = view.findViewById(R.id.pass_input);
 
-        API api = API.getAPI();
+        API api = API.getAPI(requireContext());
 
         loginBtn.setOnClickListener(v -> {
             String emailText = emailInput.getText();
@@ -111,28 +111,15 @@ public class LoginFragment extends Fragment {
                                 App.saveString("lastLoginAt", json.optString("lastLoginAt", ""));
                                 App.saveString("createdAt", json.optString("createdAt", ""));
                                 App.saveLong("token_time", System.currentTimeMillis()+3000000);
+                                if (!json.isNull("schedule")) {
+                                    App.saveString("schedule", json.optString("schedule", ""));
+                                    App.saveLong("schedule_update", System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR);
+                                }
 
                                 if (json.optBoolean("verified")) {
-                                    Toast.makeText(requireContext(), "Login successful!", Toast.LENGTH_SHORT).show();
-                                    loading.setMessage("Subscribing to Notifications...");
-                                    loading.setCancelable(false);
-                                    loading.show();
-
-                                    api.scheduleData(schedule -> {
-                                        if (schedule != null) {
-                                            App.saveString("schedule", schedule.toString());
-                                            App.saveLong("schedule_update", System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR);
-                                        }
-                                        api.subscribeNotification(requireContext(), subscribe -> {
-                                            if (loading.isShowing()) loading.dismiss();
-                                            if (subscribe) {
-                                                Toast.makeText(requireContext(), "Notification subscribed successfully!", Toast.LENGTH_SHORT).show();
-                                            } else {
-                                                Toast.makeText(requireContext(), "Subscription failed, continuing without notifications.", Toast.LENGTH_SHORT).show();
-                                            }
-                                            goToDashboard();
-                                        });
-                                    });
+                                    api.subscribeNotification(requireContext(), null);
+                                    Toast.makeText(requireContext(), "Login success. Go To Dashboard!", Toast.LENGTH_SHORT).show();
+                                    goToDashboard();
                                 } else {
                                     Toast.makeText(requireContext(), "Please verify your email first!", Toast.LENGTH_SHORT).show();
                                     goToVerificationPage();

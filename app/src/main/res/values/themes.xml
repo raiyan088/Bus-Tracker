@@ -18,7 +18,6 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
-
     <style name="RoundedStyle">
         <item name="android:background">@drawable/rounded_bg</item>
         <item name="android:elevation">4dp</item>

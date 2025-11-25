@@ -1,7 +1,9 @@
 package com.rr.bubtbustracker;
 
 import android.app.Application;
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.location.LocationManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -21,7 +23,8 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        API api = API.initialize();
+
+        API api = API.initialize(this);
 
         prefs = getSharedPreferences("BusTracker", MODE_PRIVATE);
 
@@ -67,7 +70,7 @@ public class App extends Application {
 
     public static boolean isLogin() {
         return !getString("id", "").isEmpty() &&
-                !getString("rule", "").isEmpty() &&
+                !getString("role", "").isEmpty() &&
                 !getString("name", "").isEmpty() &&
                 !getString("bus", "").isEmpty() &&
                 !getString("email", "").isEmpty() &&
@@ -75,6 +78,15 @@ public class App extends Application {
                 !getString("requestToken", "").isEmpty() &&
                 !getString("accessToken", "").isEmpty();
     }
+
+    public static boolean isDriver() {
+        return getString("role", "").equals("DRIVER");
+    }
+
+    public static boolean isStartTrip() {
+        return getBoolean("start_trip", false);
+    }
+
 
     public static native String encryption(String data);
 
