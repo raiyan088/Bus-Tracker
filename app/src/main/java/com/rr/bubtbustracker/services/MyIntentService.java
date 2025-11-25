@@ -10,6 +10,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.JobIntentService;
@@ -32,8 +33,9 @@ public class MyIntentService extends JobIntentService {
         try {
             final Bundle extras = intent.getExtras();
             if (extras != null) {
-                final String title = extras.getString("gcm.notification.title");
-                final String body = extras.getString("gcm.notification.body");
+                final String title = extras.getString("title");
+                final String body = extras.getString("body");
+                Log.d("MyBusTracker", "onHandleWork: "+title+" "+body);
                 if (title != null && body != null && !body.isEmpty() && !title.isEmpty()) {
                     showNotification(this, title, body);
                 }

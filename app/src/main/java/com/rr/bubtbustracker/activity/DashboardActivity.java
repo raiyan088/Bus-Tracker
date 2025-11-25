@@ -390,7 +390,11 @@ public class DashboardActivity extends AppCompatActivity implements OnBusClickLi
                 .setTitle("Start Bus Trip")
                 .setMessage("Are you sure you want to start this bus trip?")
                 .setPositiveButton("Start", (dialog, which) -> {
-                    getCurrentLocation();
+                    if (mAPI.isConnected()) {
+                        getCurrentLocation();
+                    } else {
+                        Toast.makeText(this, "Websocket are not connected", Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
                 .show();

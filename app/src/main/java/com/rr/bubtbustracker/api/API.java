@@ -75,7 +75,7 @@ public class API {
     private ArrayList<LatLng> routePoints;
     private int load = 0;
 
-    private boolean isDemo = false;
+    private boolean isDemo = true;
 
     private final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
@@ -264,6 +264,10 @@ public class API {
 
             }
         } catch (Exception ignored) {}
+    }
+
+    public boolean isConnected() {
+        return mWebSocketClient != null && isWebSocketConnected;
     }
 
     public void readLocationRoute(long time, String bus) {
