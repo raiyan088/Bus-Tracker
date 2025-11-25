@@ -8,10 +8,9 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.rr.bubtbustracker.R;
-import com.rr.bubtbustracker.file.RoutePoint;
+import com.rr.bubtbustracker.model.RoutePoint;
 import com.rr.bubtbustracker.interfaces.OnBusClickListener;
 import com.rr.bubtbustracker.view.RouteMapView;
 

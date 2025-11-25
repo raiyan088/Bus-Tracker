@@ -28,6 +28,7 @@
             android:name=".activity.DashboardActivity"
             android:screenOrientation="portrait"
             android:exported="true"
+            android:launchMode="singleTop"
             tools:ignore="LockedOrientationActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -40,6 +41,7 @@
             android:name=".activity.MainActivity"
             android:screenOrientation="portrait"
             android:exported="false"
+            android:launchMode="singleTop"
             tools:ignore="LockedOrientationActivity" />
 
         <meta-data
@@ -53,6 +55,11 @@
 
         <service
             android:name=".services.MyNotificationService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <service
+            android:name=".services.DriverNotificationService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 

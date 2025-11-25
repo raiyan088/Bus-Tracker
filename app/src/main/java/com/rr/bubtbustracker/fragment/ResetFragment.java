@@ -54,7 +54,7 @@ public class ResetFragment extends Fragment {
             startTimer(time);
         }
 
-        API api = API.getAPI();
+        API api = API.getAPI(requireContext());
 
         resetBtn.setOnClickListener(v -> {
             String emailText = emailInput.getText();

@@ -66,7 +66,7 @@ public class VerificationFragment extends Fragment {
             startTimer(resendTime, refreshTime);
         }
 
-        API api = API.getAPI();
+        API api = API.getAPI(requireContext());
 
         String part1 = "Please check your ";
         String email = App.getString("email","");
@@ -111,29 +111,16 @@ public class VerificationFragment extends Fragment {
                                     App.saveString("accessToken", json.optString("latestToken", ""));
                                     App.saveLong("token_time", System.currentTimeMillis()+3000000);
                                 }
+                                if (!json.isNull("schedule")) {
+                                    App.saveString("schedule", json.optString("schedule", ""));
+                                    App.saveLong("schedule_update", System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR);
+                                }
                                 App.saveLong("resend_time", System.currentTimeMillis()+60000);
 
                                 if (json.optBoolean("verified")) {
-                                    Toast.makeText(requireContext(), "Login successful!", Toast.LENGTH_SHORT).show();
-                                    loading.setMessage("Subscribing to Notifications...");
-                                    loading.setCancelable(false);
-                                    loading.show();
-
-                                    api.scheduleData(schedule -> {
-                                        if (schedule != null) {
-                                            App.saveString("schedule", schedule.toString());
-                                            App.saveLong("schedule_update", System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR);
-                                        }
-                                        api.subscribeNotification(requireContext(), subscribe -> {
-                                            if (loading.isShowing()) loading.dismiss();
-                                            if (subscribe) {
-                                                Toast.makeText(requireContext(), "Notification subscribed successfully!", Toast.LENGTH_SHORT).show();
-                                            } else {
-                                                Toast.makeText(requireContext(), "Subscription failed, continuing without notifications.", Toast.LENGTH_SHORT).show();
-                                            }
-                                            goToDashboard();
-                                        });
-                                    });
+                                    api.subscribeNotification(requireContext(), null);
+                                    Toast.makeText(requireContext(), "Login success. Go To Dashboard!", Toast.LENGTH_SHORT).show();
+                                    goToDashboard();
                                 } else {
                                     Toast.makeText(requireContext(), "Please check your inbox!", Toast.LENGTH_SHORT).show();
                                     startTimer(60000, App.getLong("refresh_time", 0));
@@ -179,20 +166,9 @@ public class VerificationFragment extends Fragment {
                                 App.saveLong("refresh_time", System.currentTimeMillis()+15000);
 
                                 if (json.optBoolean("verified")) {
-                                    Toast.makeText(requireContext(), "Login successful!", Toast.LENGTH_SHORT).show();
-                                    loading.setMessage("Subscribing to Notifications...");
-                                    loading.setCancelable(false);
-                                    loading.show();
-
-                                    api.subscribeNotification(requireContext(), subscribe -> {
-                                        if (loading.isShowing()) loading.dismiss();
-                                        if (subscribe) {
-                                            Toast.makeText(requireContext(), "Notification subscribed successfully!", Toast.LENGTH_SHORT).show();
-                                        } else {
-                                            Toast.makeText(requireContext(), "Subscription failed, continuing without notifications.", Toast.LENGTH_SHORT).show();
-                                        }
-                                        goToDashboard();
-                                    });
+                                    api.subscribeNotification(requireContext(), null);
+                                    Toast.makeText(requireContext(), "Login success. Go To Dashboard!", Toast.LENGTH_SHORT).show();
+                                    goToDashboard();
                                 } else {
                                     Toast.makeText(requireContext(), "Your account is not verified. Please check your email to verify.", Toast.LENGTH_SHORT).show();
                                     startTimer(App.getLong("resend_time", 0), 30000);

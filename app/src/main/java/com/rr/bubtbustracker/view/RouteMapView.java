@@ -12,7 +12,7 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
-import com.rr.bubtbustracker.file.RoutePoint;
+import com.rr.bubtbustracker.model.RoutePoint;
 
 import java.util.ArrayList;
 import java.util.List;

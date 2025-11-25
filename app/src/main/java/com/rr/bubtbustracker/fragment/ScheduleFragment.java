@@ -62,7 +62,7 @@ public class ScheduleFragment extends Fragment {
         long now = System.currentTimeMillis();
         if (0 < now) {
             App.saveLong("schedule_update", now + 60000);
-            new API().scheduleData(schedule -> {
+            API.getAPI(requireContext()).scheduleData(schedule -> {
                 if (schedule != null) {
                     App.saveString("schedule", schedule.toString());
                     App.saveLong("schedule_update", now + AlarmManager.INTERVAL_HOUR);

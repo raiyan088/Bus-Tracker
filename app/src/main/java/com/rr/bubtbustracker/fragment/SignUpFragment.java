@@ -1,5 +1,6 @@
 package com.rr.bubtbustracker.fragment;
 
+import android.app.AlarmManager;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Bundle;
@@ -51,7 +52,7 @@ public class SignUpFragment extends Fragment {
         LinearLayout busClick = view.findViewById(R.id.busClick);
         TextView busName = view.findViewById(R.id.busName);
 
-        API api = API.getAPI();
+        API api = API.getAPI(requireContext());
 
         busClick.setOnClickListener(v -> {
             hideKeyboard();
@@ -133,6 +134,10 @@ public class SignUpFragment extends Fragment {
                                 App.saveString("requestToken", json.optString("requestToken", ""));
                                 App.saveLong("resend_time", System.currentTimeMillis()+60000);
                                 App.saveLong("token_time", System.currentTimeMillis()+3000000);
+                                if (!json.isNull("schedule")) {
+                                    App.saveString("schedule", json.optString("schedule", ""));
+                                    App.saveLong("schedule_update", System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR);
+                                }
                                 Toast.makeText(requireContext(), "Account Creating Success.", Toast.LENGTH_SHORT).show();
 
                                 goToVerificationPage();

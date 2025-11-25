@@ -35,7 +35,7 @@ public class NotificationFragment extends Fragment {
         EditText body = view.findViewById(R.id.body);
         Button send = view.findViewById(R.id.send);
 
-        API api =  new API();
+        API api =  API.getAPI(requireContext());
 
         send.setOnClickListener(v -> {
             String titleText = title.getText().toString();

@@ -1,31 +1,31 @@
 package com.rr.bubtbustracker.fragment;
 
-import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.location.Location;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.view.animation.LinearInterpolator;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapsInitializer;
-import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -39,20 +39,28 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.rr.bubtbustracker.App;
 import com.rr.bubtbustracker.R;
+import com.rr.bubtbustracker.db.TripDatabaseHelper;
+import com.rr.bubtbustracker.interfaces.FragmentReadyListener;
+import com.rr.bubtbustracker.model.TripLocation;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public class LocationFragment extends Fragment {
 
     private GoogleMap mMap;
+    private ImageView busRoute;
+    private ProgressBar busRouteLoading;
+    private TextView fromName;
+    private TextView toName;
+    private LinearLayout distView;
     private float lastZoom = 0;
     private Marker startMarker;
     private Marker endMarker;
@@ -60,6 +68,32 @@ public class LocationFragment extends Fragment {
     private Polyline polylineInner;
     private List<Circle> outerCircle;
     private List<Circle> innerCircle;
+    private Circle busOuterCircle = null;
+    private Circle busInnerCircle = null;
+    private double busOuterRadius = 40;
+    private double busInnerRadius = 20;
+    private LatLng previousBusLocation = null;
+    private ValueAnimator busAnimator;
+    private LatLng currentAnimatedLocation = null;
+    private long lastUpdateTime = 0;
+    private boolean isShowBusRute = false;
+    private boolean isAutoMove = false;
+    private ArrayList<LatLng> polylinePoints;
+    private TripDatabaseHelper dbHelper;
+    private ValueAnimator radarAnimator = null;
+    private boolean isZooming = false;
+
+    private FragmentReadyListener callback;
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+
+        if (context instanceof FragmentReadyListener) {
+            callback = (FragmentReadyListener) context;
+        }
+
+    }
 
     @Nullable
     @Override
@@ -73,15 +107,46 @@ public class LocationFragment extends Fragment {
 
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.google_map);
 
-        ClipboardManager clipboard = (ClipboardManager) requireContext().getSystemService(Context.CLIPBOARD_SERVICE);
+        distView = view.findViewById(R.id.distView);
+        fromName = view.findViewById(R.id.fromName);
+        toName = view.findViewById(R.id.toName);
+        busRoute = view.findViewById(R.id.bus_route);
+        busRouteLoading = view.findViewById(R.id.bus_route_loading);
+
+        boolean isDriver = App.isDriver();
+
+        busRoute.setOnClickListener(v -> {
+            isAutoMove = true;
+            if (!isShowBusRute) {
+                if (isDriver) {
+                    ArrayList<LatLng> list = new ArrayList<>();
+                    if (dbHelper != null) {
+                        list = dbHelper.getAllLocationsAsLatLng();
+                    }
+                    showBusRute(list);
+                } else {
+                    ArrayList<TripLocation> list = new ArrayList<>();
+                    if (dbHelper != null) {
+                        list = dbHelper.getAllLocationsAsList();
+                    }
+
+                    callback.readLocationRoute(getLastTime(list));
+                    busRoute.setEnabled(false);
+                    busRoute.setClickable(false);
+                    busRouteLoading.setVisibility(View.VISIBLE);
+                }
+            } else if (busInnerCircle != null) {
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(busInnerCircle.getCenter(), 16.2f));
+            }
+        });
 
         if (mapFragment != null) {
             mapFragment.getMapAsync(googleMap -> {
                 mMap = googleMap;
 
-                LatLng bubtLocation = new LatLng(23.81189,90.35711);
-                startMarker = mMap.addMarker(new MarkerOptions().position(bubtLocation).title("Bangladesh University of Business and Technology (BUBT)"));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(bubtLocation, 15));
+                if (callback != null) callback.onLocationReady();
+
+                viewCurrentPosition(true);
 
                 mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
@@ -89,47 +154,30 @@ public class LocationFragment extends Fragment {
 
                 mMap.getUiSettings().setMyLocationButtonEnabled(true);
 
-                mMap.setOnMapClickListener(latLng -> {
-
-                    if (startMarker != null) {
-                        startMarker.remove();
-                    }
-
-                    if (endMarker != null) {
-                        endMarker.remove();
-                    }
-
-                    startMarker = mMap.addMarker(new MarkerOptions()
-                            .position(latLng)
-                            .title("Selected Location"));
-
-                    String lat = String.format(Locale.US, "%.5f", latLng.latitude);
-                    String lng = String.format(Locale.US, "%.5f", latLng.longitude);
-
-                    ClipData clip = ClipData.newPlainText("LatLng", lat + "," + lng);
-                    clipboard.setPrimaryClip(clip);
-
-                    Toast.makeText(requireContext(), "Copied: " + lat + "," + lng, Toast.LENGTH_SHORT).show();
-                });
-
                 mMap.setOnCameraMoveListener(() -> {
-                    if (polylineInner == null || polylineOuter == null) return;
+                    if ((polylineInner != null && polylineOuter != null) || busInnerCircle != null) {
+                        float zoom = mMap.getCameraPosition().zoom;
+                        float currentZoom = (float) (Math.round(zoom * 100.0) / 100.0);
 
-                    float zoom = mMap.getCameraPosition().zoom;
-                    float currentZoom = (float) (Math.round(zoom * 100.0) / 100.0);
-
-                    if (currentZoom != lastZoom) {
-                        lastZoom = currentZoom;
-
-                        updateMapZoom();
+                        if (currentZoom != lastZoom) {
+                            lastZoom = currentZoom;
+                            updateMapZoom(zoom);
+                        }
                     }
                 });
 
                 mMap.setOnCameraIdleListener(() -> {
-                    Log.d("BusTrackerLog", "onViewCreated: "+mMap.getCameraPosition().zoom);
-                    if (polylineInner == null || polylineOuter == null) return;
+                    isZooming = false;
+                    if ((polylineInner != null && polylineOuter != null) || busInnerCircle != null) {
+                        updateMapZoom(mMap.getCameraPosition().zoom);
+                    }
+                });
 
-                    updateMapZoom();
+                mMap.setOnCameraMoveStartedListener(reason -> {
+                    isZooming = true;
+                    if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+                        isAutoMove = false;
+                    }
                 });
 
                 mMap.setOnCircleClickListener(circle -> {
@@ -159,8 +207,19 @@ public class LocationFragment extends Fragment {
         }
     }
 
-    private void updateMapZoom() {
-        float zoom = mMap.getCameraPosition().zoom;
+    private long getLastTime(ArrayList<TripLocation> list) {
+        try {
+            int size = list.size();
+            if (size > 0) {
+                TripLocation tripLocation = list.get(size-1);
+                return tripLocation.time;
+            }
+        } catch (Exception e) {}
+
+        return 0;
+    }
+
+    private void updateMapZoom(float zoom) {
         float baseWidthAt17 = 30.0f;
         float scalingFactor = 10.0f;
 
@@ -174,8 +233,10 @@ public class LocationFragment extends Fragment {
 
         float outerWidth = innerWidth + 6f;
 
-        polylineInner.setWidth(innerWidth);
-        polylineOuter.setWidth(outerWidth);
+        if (polylineInner != null && polylineOuter != null) {
+            polylineInner.setWidth(innerWidth);
+            polylineOuter.setWidth(outerWidth);
+        }
 
         double circlePixelSize = innerWidth + 10f;
 
@@ -188,6 +249,16 @@ public class LocationFragment extends Fragment {
                     circle.setRadius(radius);
                 }
             }
+        }
+
+        if (busInnerCircle != null) {
+            LatLng center = busInnerCircle.getCenter();
+            float dynamicOuterAdd = (17f - zoom) * 10f;
+            double outerPixelSize = circlePixelSize + 70f - dynamicOuterAdd;
+            busInnerRadius = getRadiusInMeters(mMap, center, (float)circlePixelSize);
+            busOuterRadius = getRadiusInMeters(mMap, center, (float)outerPixelSize);
+            busInnerCircle.setRadius(busInnerRadius);
+            busOuterCircle.setRadius(0);
         }
     }
 
@@ -218,6 +289,7 @@ public class LocationFragment extends Fragment {
 
             List<LatLng> points = new ArrayList<>();
 
+            isShowBusRute = false;
             removeAllView();
 
             float mapZoom = 15;
@@ -309,7 +381,7 @@ public class LocationFragment extends Fragment {
                         endMarker.showInfoWindow();
                     }
 
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, (int) zoom));
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, (int) zoom));
                 }
             } else {
                 startMarker = mMap.addMarker(new MarkerOptions()
@@ -321,7 +393,7 @@ public class LocationFragment extends Fragment {
                     startMarker.showInfoWindow();
                 }
 
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(selected, mapZoom));
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(selected, mapZoom));
             }
 
             if (!points.isEmpty()) {
@@ -384,5 +456,293 @@ public class LocationFragment extends Fragment {
             }
             outerCircle = null;
         }
+    }
+
+    public void viewCurrentPosition(boolean mark) {
+        isAutoMove = mark;
+        if (busInnerCircle != null) {
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(busInnerCircle.getCenter(), 15f));
+        } else if (mark) {
+            LatLng bubtLocation = new LatLng(23.81189,90.35711);
+            startMarker = mMap.addMarker(new MarkerOptions().position(bubtLocation).title("Bangladesh University of Business and Technology (BUBT)"));
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(bubtLocation, 15f));
+        }
+    }
+
+    public void updateBusRoute(ArrayList<LatLng> list) {
+        if (busRouteLoading != null) {
+            busRoute.setClickable(true);
+            busRoute.setEnabled(true);
+            busRouteLoading.setVisibility(View.GONE);
+        }
+        if (list != null) {
+            if (list.isEmpty()) {
+                Toast.makeText(requireContext(), "Error reading bus route data", Toast.LENGTH_SHORT).show();
+            } else {
+                showBusRute(list);
+            }
+        }
+    }
+
+    public void setBusLocation(LatLng newLocation, ArrayList<LatLng> list, boolean isDriver) {
+        long currentTime = System.currentTimeMillis();
+
+        if (previousBusLocation == null) {
+            removeAllView();
+
+            busRoute.setVisibility(View.VISIBLE);
+
+            if (isDriver) {
+                if (list == null) {
+                    ArrayList<LatLng> listNew = new ArrayList<>();
+                    listNew.add(newLocation);
+                    showBusRute(listNew);
+                } else {
+                    showBusRute(list);
+                }
+            }
+
+            busOuterCircle = mMap.addCircle(new CircleOptions()
+                    .center(newLocation)
+                    .radius(40)
+                    .strokeColor(Color.TRANSPARENT)
+                    .fillColor(Color.parseColor("#350F53FE"))
+                    .strokeWidth(0)
+                    .zIndex(1000f)
+            );
+
+            busInnerCircle = mMap.addCircle(new CircleOptions()
+                    .center(newLocation)
+                    .radius(20)
+                    .strokeColor(Color.WHITE)
+                    .fillColor(Color.parseColor("#0F53FE"))
+                    .strokeWidth(10)
+                    .zIndex(1001f)
+                    .clickable(true)
+            );
+
+            busInnerRadius = 20;
+            busOuterRadius = 40;
+
+            currentAnimatedLocation = newLocation;
+            previousBusLocation = newLocation;
+            lastUpdateTime = currentTime;
+
+
+            updateMapZoom(15);
+            startRadarAnimation();
+            viewCurrentPosition(false);
+        } else {
+            long timeSinceLastUpdate = currentTime - lastUpdateTime;
+            long duration = Math.max(2000, timeSinceLastUpdate);
+
+            LatLng from = (currentAnimatedLocation != null) ? currentAnimatedLocation : previousBusLocation;
+
+            animateBusMovement(from, newLocation, duration);
+
+            previousBusLocation = newLocation;
+            lastUpdateTime = currentTime;
+        }
+    }
+
+    public void startBusTrip(TripDatabaseHelper dbHelper, boolean isReconnect) {
+        this.dbHelper = dbHelper;
+
+        if (busRoute != null) {
+            busRoute.setVisibility(View.VISIBLE);
+        }
+
+        if (isReconnect && dbHelper != null) {
+            ArrayList<LatLng> list = dbHelper.getAllLocationsAsLatLng();
+
+            int size = list.size();
+            if (size > 0) {
+                setBusLocation(list.get(size-1), list, true);
+            }
+        }
+    }
+
+    public void stopBusTrip() {
+        if (busRoute != null) {
+            isShowBusRute = false;
+            busRoute.setVisibility(View.GONE);
+        }
+
+        if (distView != null) {
+            distView.setVisibility(View.GONE);
+        }
+
+        removeAllView();
+
+        if (busOuterCircle != null) {
+            busOuterCircle.remove();
+            busOuterCircle = null;
+        }
+
+        if (busInnerCircle != null) {
+            busInnerCircle.remove();
+            busInnerCircle = null;
+        }
+
+        if (busAnimator != null && busAnimator.isRunning()) {
+            busAnimator.cancel();
+            busAnimator = null;
+        }
+
+        if (radarAnimator != null && radarAnimator.isRunning()) {
+            radarAnimator.cancel();
+            radarAnimator = null;
+        }
+
+        lastUpdateTime = 0;
+        previousBusLocation = null;
+        currentAnimatedLocation = null;
+    }
+
+    public void showBusRute(ArrayList<LatLng> lngArrayList) {
+        removeAllView();
+        isShowBusRute = true;
+
+        polylinePoints = lngArrayList;
+        innerCircle = new ArrayList<>();
+        outerCircle = new ArrayList<>();
+
+        int size = polylinePoints.size();
+        if (size > 0 && currentAnimatedLocation != null) {
+            polylinePoints.remove(size-1);
+            polylinePoints.add(currentAnimatedLocation);
+        }
+
+        PolylineOptions outer = new PolylineOptions()
+                .addAll(polylinePoints)
+                .width(18)
+                .color(Color.parseColor("#0A12D9"))
+                .geodesic(true);
+        polylineOuter = mMap.addPolyline(outer);
+
+        PolylineOptions inner = new PolylineOptions()
+                .addAll(polylinePoints)
+                .width(12)
+                .color(Color.parseColor("#0F53FE"))
+                .geodesic(true);
+
+        Circle circle = mMap.addCircle(new CircleOptions()
+                .center(polylinePoints.get(0))
+                .radius(40)
+                .strokeColor(Color.TRANSPARENT)
+                .fillColor(Color.parseColor("#20000000"))
+                .strokeWidth(0)
+                .zIndex(1));
+
+        outerCircle.add(circle);
+
+        circle = mMap.addCircle(new CircleOptions()
+                .center(polylinePoints.get(0))
+                .radius(20)
+                .strokeColor(Color.parseColor("#FF757575"))
+                .fillColor(Color.WHITE)
+                .strokeWidth(6)
+                .clickable(true)
+                .zIndex(2));
+
+        innerCircle.add(circle);
+
+        polylineInner = mMap.addPolyline(inner);
+
+        updateMapZoom(15);
+        viewCurrentPosition(false);
+    }
+
+    private void animateBusMovement(LatLng from, LatLng to, long duration) {
+        if (busAnimator != null && busAnimator.isRunning()) {
+            busAnimator.cancel();
+        }
+
+        busAnimator = ValueAnimator.ofFloat(0, 1);
+        busAnimator.setDuration(duration);
+        busAnimator.setInterpolator(new LinearInterpolator());
+
+        busAnimator.addUpdateListener(animation -> {
+            float t = (float) animation.getAnimatedValue();
+            double lat = from.latitude + (to.latitude - from.latitude) * t;
+            double lng = from.longitude + (to.longitude - from.longitude) * t;
+            LatLng current = new LatLng(lat, lng);
+
+            currentAnimatedLocation = current;
+
+            if (busInnerCircle != null) busInnerCircle.setCenter(current);
+            if (busOuterCircle != null) busOuterCircle.setCenter(current);
+
+            if (isShowBusRute) {
+                if (polylineInner != null) {
+                    ArrayList<LatLng> tempInner = new ArrayList<>(polylinePoints);
+                    tempInner.add(current);
+                    polylineInner.setPoints(tempInner);
+                }
+
+                if (polylineOuter != null) {
+                    ArrayList<LatLng> tempOuter = new ArrayList<>(polylinePoints);
+                    tempOuter.add(current);
+                    polylineOuter.setPoints(tempOuter);
+                }
+            }
+        });
+
+        busAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (isShowBusRute) {
+                    polylinePoints.add(to);
+                }
+                if (isAutoMove) {
+                    float currentZoom = mMap.getCameraPosition().zoom;
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(to, currentZoom));
+                }
+            }
+        });
+
+        busAnimator.start();
+    }
+
+    public void viewTripStart(TripDatabaseHelper dbHelper, String from, String to) {
+        this.dbHelper = dbHelper;
+
+        if (distView != null) {
+            distView.setVisibility(View.VISIBLE);
+            fromName.setText(from);
+            toName.setText(to);
+        }
+    }
+
+    private void startRadarAnimation() {
+        if (busOuterCircle == null && busInnerCircle != null) return;
+
+        if (radarAnimator != null && radarAnimator.isRunning()) return;
+
+        final AtomicBoolean[] zoomStart = {new AtomicBoolean(false)};
+
+        radarAnimator = ValueAnimator.ofFloat(0f, 1f);
+        radarAnimator.setDuration(750);
+        radarAnimator.setRepeatCount(ValueAnimator.INFINITE);
+        radarAnimator.setRepeatMode(ValueAnimator.RESTART);
+
+        radarAnimator.addUpdateListener(animation -> {
+            if (isZooming) {
+                zoomStart[0].set(true);
+                return;
+            };
+
+            if (zoomStart[0].get()) {
+                zoomStart[0].set(false);
+                animation.setCurrentFraction(0f);
+                return;
+            }
+
+            float fraction = (float) animation.getAnimatedValue();
+            double newRadius = busInnerRadius + fraction * (busOuterRadius - busInnerRadius);
+            busOuterCircle.setRadius(newRadius);
+        });
+
+        radarAnimator.start();
     }
 }
