@@ -75,7 +75,7 @@ public class API {
     private ArrayList<LatLng> routePoints;
     private int load = 0;
 
-    private boolean isDemo = true;
+    private boolean isDemo = false;
 
     private final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
