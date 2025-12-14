@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="gray">#FF424242</color>
+    <color name="blue">#FF2090E4</color>
+    <color name="blue_effect">#9F2090E4</color>
+    <color name="ripple_gray">#33000000</color>
+</resources>

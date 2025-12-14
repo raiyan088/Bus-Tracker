@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="CustomView">
+        <attr name="cornerRadius" format="dimension"/>
+        <attr name="cornerTopLeft" format="dimension"/>
+        <attr name="cornerTopRight" format="dimension"/>
+        <attr name="cornerBottomRight" format="dimension"/>
+        <attr name="cornerBottomLeft" format="dimension"/>
+        <attr name="cardUsePadding" format="boolean"/>
+        <attr name="bgColor" format="color"/>
+        <attr name="strokeColor" format="color"/>
+        <attr name="strokeWidth" format="dimension"/>
+        <attr name="rippleColor" format="color"/>
+        <attr name="clickEffect" format="boolean"/>
+    </declare-styleable>
+
+    <declare-styleable name="CustomInputView">
+        <attr name="logoSrc" format="reference"/>
+        <attr name="hintText" format="string"/>
+        <attr name="secondaryLogoSrc" format="reference"/>
+        <attr name="isEmail" format="boolean"/>
+        <attr name="isPassword" format="boolean"/>
+        <attr name="padding" format="dimension"/>
+        <attr name="paddingStart" format="dimension"/>
+        <attr name="paddingEnd" format="dimension"/>
+        <attr name="paddingTop" format="dimension"/>
+        <attr name="paddingBottom" format="dimension"/>
+        <attr name="background" format="reference"/>
+        <attr name="elevation" format="dimension"/>
+        <attr name="textSize" format="dimension"/>
+    </declare-styleable>
+
+</resources>

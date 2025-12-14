@@ -1,0 +1,39 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.BUBTBusTracker" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#256CAE</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSecondary">#2A9DB8</item>
+    </style>
+
+    <style name="NoStatusBar" parent="Theme.BUBTBusTracker">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+
+    <style name="Theme.SplashScreen" parent="NoStatusBar">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="RoundedStyle">
+        <item name="android:background">@drawable/rounded_bg</item>
+        <item name="android:elevation">4dp</item>
+    </style>
+
+    <style name="RoundedEffectStyle">
+        <item name="android:background">@drawable/rounded_bg_effect</item>
+        <item name="android:elevation">4dp</item>
+    </style>
+
+    <style name="CircleStyle">
+        <item name="android:background">@drawable/circle_bg</item>
+        <item name="android:elevation">4dp</item>
+    </style>
+
+    <style name="DrawerMenuText">
+        <item name="android:textSize">14sp</item>
+    </style>
+</resources>
